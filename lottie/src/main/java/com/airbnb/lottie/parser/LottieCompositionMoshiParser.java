@@ -24,17 +24,17 @@ import java.util.Map;
 
 public class LottieCompositionMoshiParser {
   private static final JsonReader.Options NAMES = JsonReader.Options.of(
-      "w", // 0
-      "h", // 1
-      "ip", // 2
-      "op", // 3
-      "fr", // 4
-      "v", // 5
-      "layers", // 6
-      "assets", // 7
-      "fonts", // 8
-      "chars", // 9
-      "markers" // 10
+      "w", // 0 - 宽
+      "h", // 1 - 高
+      "ip", // 2 - 开始帧
+      "op", // 3 - 结束帧
+      "fr", // 4  - 帧率
+      "v", // 5 - bodymovin插件版本
+      "layers", // 6 - 图层
+      "assets", // 7 - 资源
+      "fonts", // 8 - 字体
+      "chars", // 9 - 字符
+      "markers" // 10 - 标记
   );
 
   public static LottieComposition parse(JsonReader reader) throws IOException {

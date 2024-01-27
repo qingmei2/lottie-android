@@ -16,6 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="16dp"
+            android:visibility="gone"
             app:lottie_rawRes="@raw/name"
             app:lottie_autoPlay="true"
             app:lottie_loop="true"/>
@@ -23,8 +24,8 @@
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/dynamicTextView"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:lottie_rawRes="@raw/name"
+            android:layout_height="300dp"
+            app:lottie_rawRes="@raw/unknown404"
             app:lottie_autoPlay="true"
             app:lottie_loop="true"/>
     </LinearLayout>

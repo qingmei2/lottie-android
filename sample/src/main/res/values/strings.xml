@@ -75,6 +75,7 @@
     <string name="showcase_item_dynamic_properties">Dynamic\nProperties</string>
     <string name="showcase_item_animated_text">Animated\nText</string>
     <string name="showcase_item_dynamic_text">Dynamic\nText</string>
+    <string name="showcase_item_player_theme">播放器主题</string>
     <string name="showcase_item_recycler_view">RecyclerView</string>
     <string name="bullseye_drag_dot">Drag the blue dot</string>
 </resources>

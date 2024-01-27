@@ -55,18 +55,18 @@ public abstract class BaseLayer
   static BaseLayer forModel(
       CompositionLayer compositionLayer, Layer layerModel, LottieDrawable drawable, LottieComposition composition) {
     switch (layerModel.getLayerType()) {
-      case SHAPE:
+      case SHAPE:       //轮廓/形态图层  这个是再lottie动画中用的基本上是最多的类型
         return new ShapeLayer(drawable, layerModel, compositionLayer, composition);
-      case PRE_COMP:
+      case PRE_COMP:  //合成图层，相当于ViewTree的ViewGroup的角色
         return new CompositionLayer(drawable, layerModel,
             composition.getPrecomps(layerModel.getRefId()), composition);
-      case SOLID:
+      case SOLID:        //填充图层
         return new SolidLayer(drawable, layerModel);
-      case IMAGE:
+      case IMAGE:  //图片图层  这个也很常用，特别是做一些模版特效时
         return new ImageLayer(drawable, layerModel);
-      case NULL:
+      case NULL: //空图层，可以作为其他图层的parent
         return new NullLayer(drawable, layerModel);
-      case TEXT:
+      case TEXT:       //文本图层
         return new TextLayer(drawable, layerModel);
       case UNKNOWN:
       default:
@@ -595,6 +595,7 @@ public abstract class BaseLayer
       L.endSection("BaseLayer#setProgress.matte");
     }
     L.beginSection("BaseLayer#setProgress.animations." + animations.size());
+    // 遍历设置矩阵变换的进度（缩放、透明度、位移等）, 重要！！
     for (int i = 0; i < animations.size(); i++) {
       animations.get(i).setProgress(progress);
     }

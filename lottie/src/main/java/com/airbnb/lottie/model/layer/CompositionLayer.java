@@ -163,6 +163,7 @@ public class CompositionLayer extends BaseLayer {
     if (layerModel.getTimeStretch() != 0 && !"__container".equals(layerModel.getName())) {
       progress /= layerModel.getTimeStretch();
     }
+    // 计算当前的progress，然后倒序设置每个图层进度
     for (int i = layers.size() - 1; i >= 0; i--) {
       layers.get(i).setProgress(progress);
     }

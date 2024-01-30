@@ -62,6 +62,7 @@ public abstract class BaseKeyframeAnimation<K, A> {
       return;
     }
     this.progress = progress;
+    // 关键帧发生了变更，需要通知View重新绘制.
     if (keyframesWrapper.isValueChanged(progress)) {
       notifyListeners();
     }
@@ -70,6 +71,7 @@ public abstract class BaseKeyframeAnimation<K, A> {
 
   public void notifyListeners() {
     L.beginSection("BaseKeyframeAnimation#notifyListeners");
+    // BaseLayer.onValueChanged()，本质是重新绘制
     for (int i = 0; i < listeners.size(); i++) {
       listeners.get(i).onValueChanged();
     }

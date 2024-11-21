@@ -1,6 +1,7 @@
 package com.airbnb.lottie.samples.custom
 
 import android.animation.ValueAnimator
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +33,13 @@ class CustomPlayerActivity : AppCompatActivity() {
 //                }
 //            })
 
+            binding.playerView.setImageAssetDelegate(
+                LottieAssetDelegate(
+                    this@CustomPlayerActivity, "",
+                    BitmapFactory.decodeResource(resources, R.drawable.song_cover),
+                    "",
+                ),
+            )
             binding.playerView.setAnimation(R.raw.player2)
             binding.playerView.playAnimation()
         }

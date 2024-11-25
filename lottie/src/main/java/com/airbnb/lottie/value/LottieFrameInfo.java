@@ -62,4 +62,16 @@ public class LottieFrameInfo<T> {
   public float getOverallProgress() {
     return overallProgress;
   }
+
+  @Override public String toString() {
+    return "LottieFrameInfo{" +
+        "startFrame=" + startFrame +
+        ", endFrame=" + endFrame +
+        ", startValue=" + startValue +
+        ", endValue=" + endValue +
+        ", linearKeyframeProgress=" + linearKeyframeProgress +
+        ", interpolatedKeyframeProgress=" + interpolatedKeyframeProgress +
+        ", overallProgress=" + overallProgress +
+        '}';
+  }
 }

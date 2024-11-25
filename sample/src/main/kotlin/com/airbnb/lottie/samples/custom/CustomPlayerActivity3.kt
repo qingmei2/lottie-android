@@ -1,6 +1,6 @@
 package com.airbnb.lottie.samples.custom
 
-import android.animation.ObjectAnimator
+import android.animation.Animator
 import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -11,22 +11,31 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.os.Bundle
-import android.view.View
+import android.util.Log
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.airbnb.lottie.model.layer.BaseLayer
+import com.airbnb.lottie.LottieProperty
+import com.airbnb.lottie.model.KeyPath
 import com.airbnb.lottie.samples.R
-import com.airbnb.lottie.samples.databinding.ActivityPlayerTheme2Binding
 import com.airbnb.lottie.samples.databinding.ActivityPlayerTheme3Binding
-import com.airbnb.lottie.samples.databinding.ActivityPlayerThemeBinding
 import com.airbnb.lottie.samples.utils.viewBinding
+import com.airbnb.lottie.utils.MiscUtils
+import com.airbnb.lottie.value.LottieFrameInfo
+import com.airbnb.lottie.value.LottieValueCallback
 
 /**
  * 第二种方案: 将占位贴图替换成原生的布局控件.
  */
 class CustomPlayerActivity3 : AppCompatActivity() {
     private val binding: ActivityPlayerTheme3Binding by viewBinding()
+
+    private val musicPointerPos = arrayOf(
+        arrayOf(-17f, 0f),  // 指针开始动画
+        arrayOf(0f, -17f),  // 指针结束动画
+    )
+
+    private var musicPointerValue: Float? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,43 +60,109 @@ class CustomPlayerActivity3 : AppCompatActivity() {
                 "song_cover.webp", circularBitmap1,
                 "song_cover2.webp", circularBitmap2,
                 "song_cover3.webp", circularBitmap3,
-                "images/"
+                "images/",
             ),
         )
 
         binding.playerView.setAnimation(R.raw.player3)
 
+        // 音乐指针
+        val musicPointer = KeyPath("腰杆")
+        binding.playerView.addValueCallback(
+            musicPointer, LottieProperty.TRANSFORM_ROTATION,
+            object : LottieValueCallback<Float>() {
+                override fun getValue(frameInfo: LottieFrameInfo<Float?>): Float? {
+                    if (musicPointerValue == null) {
+                        Log.e("meiqing", "value = " + super.getValue(frameInfo))
+                        return super.getValue(frameInfo)
+                    }
+                    Log.e("meiqing", "value = " + musicPointerValue)
+                    return musicPointerValue
+                }
+            },
+        )
+
         binding.btnPlay.setOnClickListener { _ ->
             binding.playerView.playAnimation()
+            onSongPlaying()
         }
-        binding.btnPause.setOnClickListener { _ -> binding.playerView.pauseAnimation() }
+        binding.btnPause.setOnClickListener { _ ->
+            onSongStop()
+        }
 
         binding.btnPre.setOnClickListener { _ ->
             Toast.makeText(this, "上一曲", Toast.LENGTH_SHORT).show()
-
-            animateImageView(binding.lavForeground)
+//            animateImageView(binding.lavForeground)
         }
         binding.btnNext.setOnClickListener { _ ->
             Toast.makeText(this, "下一曲", Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun animateImageView(view: View) {
-        // 获取视图的初始位置
-        val startX = view.translationX
+    private fun onSongPlaying() {
+        ValueAnimator.ofFloat(musicPointerPos[0][0], musicPointerPos[0][1]).apply {
+            duration = 600L // 动画持续时间，单位为毫秒
+            addUpdateListener { animation ->
+                musicPointerValue = animation.animatedValue as Float
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(p0: Animator) {
+                }
 
-        // 设置动画目标位置，这里设置为屏幕宽度，视图将完全移出屏幕
-        val screenWidth = view.resources.displayMetrics.widthPixels
-        val endX = screenWidth.toFloat()
+                override fun onAnimationEnd(p0: Animator) {
+                }
 
-        // 创建平移动画
-        val animator = ObjectAnimator.ofFloat(view, "translationX", startX, endX)
-        animator.duration = 500 // 设置动画持续时间为1秒
-        animator.interpolator = LinearInterpolator() // 设置线性插值器，动画速度均匀
+                override fun onAnimationCancel(p0: Animator) {
+                }
 
-        // 启动动画
-        animator.start()
+                override fun onAnimationRepeat(p0: Animator) {
+                }
+
+            })
+            start() // 开始动画
+        }
     }
+
+    private fun onSongStop() {
+        ValueAnimator.ofFloat(musicPointerPos[1][0], musicPointerPos[1][1]).apply {
+            duration = 600L // 动画持续时间，单位为毫秒
+            addUpdateListener { animation ->
+                musicPointerValue = animation.animatedValue as Float
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(p0: Animator) {
+                }
+
+                override fun onAnimationEnd(p0: Animator) {
+                }
+
+                override fun onAnimationCancel(p0: Animator) {
+                }
+
+                override fun onAnimationRepeat(p0: Animator) {
+                }
+
+            })
+            start() // 开始动画
+        }
+    }
+
+//    fun animateImageView(view: View) {
+//        // 获取视图的初始位置
+//        val startX = view.translationX
+//
+//        // 设置动画目标位置，这里设置为屏幕宽度，视图将完全移出屏幕
+//        val screenWidth = view.resources.displayMetrics.widthPixels
+//        val endX = screenWidth.toFloat()
+//
+//        // 创建平移动画
+//        val animator = ObjectAnimator.ofFloat(view, "translationX", startX, endX)
+//        animator.duration = 500 // 设置动画持续时间为1秒
+//        animator.interpolator = LinearInterpolator() // 设置线性插值器，动画速度均匀
+//
+//        // 启动动画
+//        animator.start()
+//    }
 
     private fun getCircleBitmap(bitmap: Bitmap): Bitmap {
         val scale = 413f / bitmap.width
@@ -96,7 +171,7 @@ class CustomPlayerActivity3 : AppCompatActivity() {
 
         val circularBitmap = Bitmap.createBitmap(
             scaledBitmap.width, scaledBitmap.height,
-            Bitmap.Config.ARGB_8888
+            Bitmap.Config.ARGB_8888,
         )
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         val canvas = Canvas(circularBitmap)

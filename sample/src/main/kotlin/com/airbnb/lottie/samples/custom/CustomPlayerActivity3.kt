@@ -93,9 +93,38 @@ class CustomPlayerActivity3 : AppCompatActivity() {
         binding.btnPre.setOnClickListener { _ ->
             Toast.makeText(this, "上一曲", Toast.LENGTH_SHORT).show()
 //            animateImageView(binding.lavForeground)
+            onPreOrNext()
         }
         binding.btnNext.setOnClickListener { _ ->
             Toast.makeText(this, "下一曲", Toast.LENGTH_SHORT).show()
+            onPreOrNext()
+        }
+    }
+
+    private fun onPreOrNext() {
+        // 切歌：
+        // 1.歌曲指针波动一个来回
+        // 2.歌曲封面图动画
+        ValueAnimator.ofFloat(musicPointerPos[0][1], musicPointerPos[0][0], musicPointerPos[0][1]).apply {
+            duration = 1200 // 动画持续时间，单位为毫秒
+            addUpdateListener { animation ->
+                musicPointerValue = animation.animatedValue as Float
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(p0: Animator) {
+                }
+
+                override fun onAnimationEnd(p0: Animator) {
+                }
+
+                override fun onAnimationCancel(p0: Animator) {
+                }
+
+                override fun onAnimationRepeat(p0: Animator) {
+                }
+
+            })
+            start() // 开始动画
         }
     }
 

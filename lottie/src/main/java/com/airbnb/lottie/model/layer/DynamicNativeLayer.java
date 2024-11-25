@@ -36,7 +36,12 @@ public class DynamicNativeLayer extends BaseLayer {
   }
 
   @Override public void drawLayer(@NonNull Canvas canvas, Matrix parentMatrix, int parentAlpha) {
-    Bitmap bitmap = getBitmap();
+    // Bitmap bitmap = getBitmap();
+
+    int width = 1080;
+    int height = 604;
+    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+
     if (bitmap == null || bitmap.isRecycled() || lottieImageAsset == null) {
       return;
     }
@@ -51,19 +56,19 @@ public class DynamicNativeLayer extends BaseLayer {
     // } else {
     //   dst.set(0, 0, (int) (bitmap.getWidth() * density), (int) (bitmap.getHeight() * density));
     // }
-    //
-    // canvas.drawBitmap(bitmap, src, dst, paint);
+
     dynamicView.draw(canvas);
+    // canvas.drawBitmap(bitmap, src, dst, paint);
     canvas.restore();
   }
 
   @Override public void getBounds(RectF outBounds, Matrix parentMatrix, boolean applyParents) {
     super.getBounds(outBounds, parentMatrix, applyParents);
-    if (lottieImageAsset != null) {
-      float scale = Utils.dpScale();
-      outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
-      boundsMatrix.mapRect(outBounds);
-    }
+    // if (lottieImageAsset != null) {
+    //   float scale = Utils.dpScale();
+    //   outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
+    //   boundsMatrix.mapRect(outBounds);
+    // }
   }
 
   @Nullable

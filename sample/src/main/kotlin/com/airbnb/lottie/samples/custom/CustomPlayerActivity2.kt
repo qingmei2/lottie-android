@@ -71,7 +71,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 
         // 创建平移动画
         val animator = ObjectAnimator.ofFloat(view, "translationX", startX, endX)
-        animator.duration = 500 // 设置动画持续时间为1秒
+        animator.duration = 5000 // 设置动画持续时间为1秒
         animator.interpolator = LinearInterpolator() // 设置线性插值器，动画速度均匀
 
         // 启动动画

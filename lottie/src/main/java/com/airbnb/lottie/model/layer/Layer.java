@@ -43,6 +43,7 @@ public class Layer {
   private final String layerName;
   private final long layerId;
   private final LayerType layerType;
+  private final boolean nativeLayer;
   private final long parentId;
   @Nullable private final String refId;
   private final List<Mask> masks;
@@ -64,7 +65,6 @@ public class Layer {
   @Nullable private final DropShadowEffect dropShadowEffect;
   private final LBlendMode blendMode;
 
-
   public Layer(List<ContentModel> shapes, LottieComposition composition, String layerName, long layerId,
       LayerType layerType, long parentId, @Nullable String refId, List<Mask> masks,
       AnimatableTransform transform, int solidWidth, int solidHeight, int solidColor,
@@ -73,6 +73,20 @@ public class Layer {
       List<Keyframe<Float>> inOutKeyframes, MatteType matteType,
       @Nullable AnimatableFloatValue timeRemapping, boolean hidden, @Nullable BlurEffect blurEffect,
       @Nullable DropShadowEffect dropShadowEffect, LBlendMode blendMode) {
+      this(shapes, composition, layerName, layerId, layerType, parentId, refId, masks, transform,
+          solidWidth, solidHeight, solidColor, timeStretch, startFrame, preCompWidth,
+          preCompHeight, text, textProperties, inOutKeyframes, matteType, timeRemapping, hidden,
+          blurEffect, dropShadowEffect, blendMode, false);
+  }
+
+  public Layer(List<ContentModel> shapes, LottieComposition composition, String layerName, long layerId,
+      LayerType layerType, long parentId, @Nullable String refId, List<Mask> masks,
+      AnimatableTransform transform, int solidWidth, int solidHeight, int solidColor,
+      float timeStretch, float startFrame, float preCompWidth, float preCompHeight,
+      @Nullable AnimatableTextFrame text, @Nullable AnimatableTextProperties textProperties,
+      List<Keyframe<Float>> inOutKeyframes, MatteType matteType,
+      @Nullable AnimatableFloatValue timeRemapping, boolean hidden, @Nullable BlurEffect blurEffect,
+      @Nullable DropShadowEffect dropShadowEffect, LBlendMode blendMode, boolean nativeLayer) {
     this.shapes = shapes;
     this.composition = composition;
     this.layerName = layerName;
@@ -98,6 +112,7 @@ public class Layer {
     this.blurEffect = blurEffect;
     this.dropShadowEffect = dropShadowEffect;
     this.blendMode = blendMode;
+    this.nativeLayer = nativeLayer;
   }
 
   LottieComposition getComposition() {
@@ -203,6 +218,10 @@ public class Layer {
 
   @Nullable public DropShadowEffect getDropShadowEffect() {
     return dropShadowEffect;
+  }
+
+  public boolean isNativeLayer() {
+    return nativeLayer;
   }
 
   public String toString(String prefix) {

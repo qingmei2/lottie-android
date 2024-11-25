@@ -1,5 +1,6 @@
 package com.airbnb.lottie.samples.custom
 
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -10,17 +11,21 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.os.Bundle
+import android.view.View
+import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.airbnb.lottie.model.layer.BaseLayer
 import com.airbnb.lottie.samples.R
+import com.airbnb.lottie.samples.databinding.ActivityPlayerTheme2Binding
 import com.airbnb.lottie.samples.databinding.ActivityPlayerThemeBinding
 import com.airbnb.lottie.samples.utils.viewBinding
 
 /**
- * 第一种方案: 动态生成贴图然后再进行替换.
+ * 第二种方案: 将占位贴图替换成原生的布局控件.
  */
-class CustomPlayerActivity : AppCompatActivity() {
-    private val binding: ActivityPlayerThemeBinding by viewBinding()
+class CustomPlayerActivity2 : AppCompatActivity() {
+    private val binding: ActivityPlayerTheme2Binding by viewBinding()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,40 +33,18 @@ class CustomPlayerActivity : AppCompatActivity() {
         binding.playerView.setOnClickListener { _ -> Toast.makeText(this, "Clicked", Toast.LENGTH_SHORT).show() }
         binding.playerView.setRepeatCount(ValueAnimator.INFINITE)
 
-
         val bitmap = BitmapFactory.decodeResource(resources, R.drawable.song_cover)
-        val scale = 240f / bitmap.width     // 将图片宽度缩放为100px
-        val matrix = Matrix().apply { postScale(scale, scale) }
-        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-
-        // 创建一个新的Bitmap对象，用于存放裁剪后的圆形Bitmap
-        val circularBitmap = Bitmap.createBitmap(
-            scaledBitmap.width, scaledBitmap.height,
-            Bitmap.Config.ARGB_8888
-        )
-
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        val canvas = Canvas(circularBitmap)
-        canvas.drawColor(Color.TRANSPARENT)
-        val centerX = scaledBitmap.width / 2
-        val centerY = scaledBitmap.height / 2
-        val radius = Math.min(centerX, centerY).toFloat()
-        canvas.drawCircle(centerX.toFloat(), centerY.toFloat(), radius, paint)
-        val xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        paint.xfermode = xfermode
-        canvas.drawBitmap(scaledBitmap, 0f, 0f, paint)
-
-            scaledBitmap.recycle() // 回收原Bitmap
+        BaseLayer.layerView = binding.lavForeground
 
         binding.playerView.setImageAssetDelegate(
             LottieAssetDelegate(
-                this@CustomPlayerActivity, "song_cover.webp",
+                this@CustomPlayerActivity2, "song_cover.webp",
 //                scaledBitmap,
-                    circularBitmap,
+                bitmap,
                 "",
             ),
         )
-        binding.playerView.setAnimation(R.raw.player2)
+        binding.playerView.setAnimation(R.raw.player2_native)
 
         binding.btnPlay.setOnClickListener { _ ->
             binding.playerView.playAnimation()
@@ -70,9 +53,28 @@ class CustomPlayerActivity : AppCompatActivity() {
 
         binding.btnPre.setOnClickListener { _ ->
             Toast.makeText(this, "上一曲", Toast.LENGTH_SHORT).show()
+
+            animateImageView(binding.lavForeground)
         }
         binding.btnNext.setOnClickListener { _ ->
             Toast.makeText(this, "下一曲", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun animateImageView(view: View) {
+        // 获取视图的初始位置
+        val startX = view.translationX
+
+        // 设置动画目标位置，这里设置为屏幕宽度，视图将完全移出屏幕
+        val screenWidth = view.resources.displayMetrics.widthPixels
+        val endX = screenWidth.toFloat()
+
+        // 创建平移动画
+        val animator = ObjectAnimator.ofFloat(view, "translationX", startX, endX)
+        animator.duration = 500 // 设置动画持续时间为1秒
+        animator.interpolator = LinearInterpolator() // 设置线性插值器，动画速度均匀
+
+        // 启动动画
+        animator.start()
     }
 }

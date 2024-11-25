@@ -10,6 +10,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.Build;
+import android.view.View;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.FloatRange;
@@ -51,6 +52,8 @@ public abstract class BaseLayer
   private static final int MATRIX_SAVE_FLAG = 0x01;
   private static final int SAVE_FLAGS = CLIP_SAVE_FLAG | CLIP_TO_LAYER_SAVE_FLAG | MATRIX_SAVE_FLAG;
 
+  public static View layerView;
+
   @Nullable
   static BaseLayer forModel(
       CompositionLayer compositionLayer, Layer layerModel, LottieDrawable drawable, LottieComposition composition) {
@@ -63,6 +66,9 @@ public abstract class BaseLayer
       case SOLID:        //填充图层
         return new SolidLayer(drawable, layerModel);
       case IMAGE:  //图片图层  这个也很常用，特别是做一些模版特效时
+        if (layerModel.isNativeLayer()) {
+          return new DynamicNativeLayer(drawable, layerModel, layerView);
+        }
         return new ImageLayer(drawable, layerModel);
       case NULL: //空图层，可以作为其他图层的parent
         return new NullLayer(drawable, layerModel);

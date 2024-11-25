@@ -52,7 +52,8 @@ public class LayerParser {
       "cl", // 21
       "hd", // 22
       "ao", // 23
-      "bm"  // 24
+      "bm", // 24
+      "ty_sub" // 25
   );
 
   public static Layer parse(LottieComposition composition) {
@@ -95,6 +96,7 @@ public class LayerParser {
     float outFrame = 0f;
     String cl = null;
     boolean hidden = false;
+    boolean nativeLayer = false;
     BlurEffect blurEffect = null;
     DropShadowEffect dropShadowEffect = null;
     boolean autoOrient = false;
@@ -274,6 +276,8 @@ public class LayerParser {
           }
           blendMode = LBlendMode.values()[blendModeIndex];
           break;
+        case 25:
+          nativeLayer = reader.nextInt() == 1;
         default:
           reader.skipName();
           reader.skipValue();
@@ -311,6 +315,6 @@ public class LayerParser {
     return new Layer(shapes, composition, layerName, layerId, layerType, parentId, refId,
         masks, transform, solidWidth, solidHeight, solidColor, timeStretch, startFrame,
         preCompWidth, preCompHeight, text, textProperties, inOutKeyframes, matteType,
-        timeRemapping, hidden, blurEffect, dropShadowEffect, blendMode);
+        timeRemapping, hidden, blurEffect, dropShadowEffect, blendMode, nativeLayer);
   }
 }

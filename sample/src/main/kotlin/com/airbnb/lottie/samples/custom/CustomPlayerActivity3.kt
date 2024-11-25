@@ -34,8 +34,26 @@ class CustomPlayerActivity3 : AppCompatActivity() {
         binding.playerView.setOnClickListener { _ -> Toast.makeText(this, "Clicked", Toast.LENGTH_SHORT).show() }
         binding.playerView.setRepeatCount(ValueAnimator.INFINITE)
 
+        // 1.拿到歌曲原始图片
         val bitmap = BitmapFactory.decodeResource(resources, R.drawable.song_cover)
-        BaseLayer.layerView = binding.lavForeground
+        val bitmap2 = BitmapFactory.decodeResource(resources, R.drawable.song_cover2)
+        val bitmap3 = BitmapFactory.decodeResource(resources, R.drawable.song_cover3)
+
+        // 2.裁剪图片宽高，应与lottie动画的占位图宽高一致，然后弄成圆形
+        val circularBitmap1 = getCircleBitmap(bitmap)
+        val circularBitmap2 = getCircleBitmap(bitmap2)
+        val circularBitmap3 = getCircleBitmap(bitmap3)
+
+        binding.playerView.imageAssetsFolder = "images/"
+        binding.playerView.setImageAssetDelegate(
+            LottieAssetDelegate3(
+                this@CustomPlayerActivity3,
+                "song_cover.webp", circularBitmap1,
+                "song_cover2.webp", circularBitmap2,
+                "song_cover3.webp", circularBitmap3,
+                "images/"
+            ),
+        )
 
         binding.playerView.setAnimation(R.raw.player3)
 
@@ -69,5 +87,31 @@ class CustomPlayerActivity3 : AppCompatActivity() {
 
         // 启动动画
         animator.start()
+    }
+
+    private fun getCircleBitmap(bitmap: Bitmap): Bitmap {
+        val scale = 413f / bitmap.width
+        val matrix = Matrix().apply { postScale(scale, scale) }
+        val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+
+        val circularBitmap = Bitmap.createBitmap(
+            scaledBitmap.width, scaledBitmap.height,
+            Bitmap.Config.ARGB_8888
+        )
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val canvas = Canvas(circularBitmap)
+        canvas.drawColor(Color.TRANSPARENT)
+        val centerX = scaledBitmap.width / 2
+        val centerY = scaledBitmap.height / 2
+        val radius = Math.min(centerX, centerY).toFloat()
+        canvas.drawCircle(centerX.toFloat(), centerY.toFloat(), radius, paint)
+        val xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        paint.xfermode = xfermode
+        canvas.drawBitmap(scaledBitmap, 0f, 0f, paint)
+
+        bitmap.recycle()
+        scaledBitmap.recycle()
+
+        return circularBitmap
     }
 }

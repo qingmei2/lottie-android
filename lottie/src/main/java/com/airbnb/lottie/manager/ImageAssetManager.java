@@ -82,8 +82,8 @@ public class ImageAssetManager {
       bitmap = delegate.fetchBitmap(asset);
       if (bitmap != null) {
         putBitmap(id, bitmap);
+        return bitmap;
       }
-      return bitmap;
     }
     Context context = this.context;
     if (context == null) {

@@ -68,7 +68,7 @@ class CustomPlayerActivity3 : AppCompatActivity() {
         )
 
         // 图片背景
-        BaseLayer.layerView = binding.lavForeground
+        BaseLayer.layerView = binding.ivAvatar
 
         binding.playerView.setAnimation(R.raw.player3)
 

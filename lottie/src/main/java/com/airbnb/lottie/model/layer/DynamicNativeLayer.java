@@ -21,13 +21,13 @@ import com.airbnb.lottie.value.LottieValueCallback;
 
 public class DynamicNativeLayer extends BaseLayer {
 
-  private final Paint paint = new LPaint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-  private final Rect src = new Rect();
-  private final Rect dst = new Rect();
   @Nullable private final LottieImageAsset lottieImageAsset;
   @Nullable private BaseKeyframeAnimation<ColorFilter, ColorFilter> colorFilterAnimation;
   @Nullable private BaseKeyframeAnimation<Bitmap, Bitmap> imageAnimation;
   private final View dynamicView;
+
+  private final Rect src = new Rect();
+  private final Rect dst = new Rect();
 
   DynamicNativeLayer(LottieDrawable lottieDrawable, Layer layerModel, @NonNull View dynamicView) {
     super(lottieDrawable, layerModel);
@@ -35,40 +35,54 @@ public class DynamicNativeLayer extends BaseLayer {
     this.dynamicView = dynamicView;
   }
 
-  @Override public void drawLayer(@NonNull Canvas canvas, Matrix parentMatrix, int parentAlpha) {
-    // Bitmap bitmap = getBitmap();
-
-    // int width = 1080;
-    // int height = 604;
-    // Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-    //
-    // if (bitmap == null || bitmap.isRecycled() || lottieImageAsset == null) {
-    //   return;
-    // }
-    // float density = Utils.dpScale();
-
+  @Override
+  public void drawLayer(@NonNull Canvas canvas, Matrix parentMatrix, int parentAlpha) {
+    final Bitmap bitmap = captureView(dynamicView);
+    if (bitmap == null) {
+      return;
+    }
     canvas.save();
     canvas.concat(parentMatrix);
 
-    // src.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
-    // if (lottieDrawable.getMaintainOriginalImageBounds()) {
-    //   dst.set(0, 0, (int) (lottieImageAsset.getWidth() * density), (int) (lottieImageAsset.getHeight() * density));
-    // } else {
-    //   dst.set(0, 0, (int) (bitmap.getWidth() * density), (int) (bitmap.getHeight() * density));
-    // }
+    int viewWidth = bitmap.getWidth();
+    int viewHeight = bitmap.getHeight();
 
-    dynamicView.draw(canvas);
-    // canvas.drawBitmap(bitmap, src, dst, paint);
+    float density = Utils.dpScale();
+    int targetWidth = (int) (viewWidth * density);
+    int targetHeight = (int) (viewHeight * density);
+
+    // 设置源矩形和目标矩形
+    src.set(0, 0, viewWidth, viewHeight);
+    dst.set(0, 0, targetWidth, targetHeight);
+
+    // 绘制 dynamicView 到 Canvas
+    canvas.drawBitmap(bitmap, src, dst, null);
+
     canvas.restore();
+  }
+
+  /**
+   * 将 View 转换为 Bitmap
+   */
+  private Bitmap captureView(View view) {
+    int width = view.getWidth();
+    int height = view.getHeight();
+    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    Canvas canvas = new Canvas(bitmap);
+    view.draw(canvas);
+
+    // 缩放bitmap为指定宽高，这个宽高需要和 json 中的宽高一致.
+    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 413, 413, true);
+    return scaledBitmap;
   }
 
   @Override public void getBounds(RectF outBounds, Matrix parentMatrix, boolean applyParents) {
     super.getBounds(outBounds, parentMatrix, applyParents);
-    // if (lottieImageAsset != null) {
-    //   float scale = Utils.dpScale();
-    //   outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
-    //   boundsMatrix.mapRect(outBounds);
-    // }
+    if (lottieImageAsset != null) {
+      float scale = Utils.dpScale();
+      outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
+      boundsMatrix.mapRect(outBounds);
+    }
   }
 
   @SuppressWarnings("SingleStatementInBlock")

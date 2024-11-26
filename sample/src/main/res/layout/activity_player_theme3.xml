@@ -16,11 +16,11 @@
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/playerView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="500px"
+        android:layout_height="500px"
         android:layout_marginTop="150dp"
         android:visibility="visible"
-        app:layout_constraintDimensionRatio="1.78:1"
+        app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -37,19 +37,11 @@
         app:layout_constraintRight_toRightOf="@+id/playerView"
         app:layout_constraintTop_toBottomOf="@+id/playerView">
 
-        <TextView
-            android:id="@+id/tvTips"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="我（绿色区域）是原生View，我的一切都会被绘制在lottie中"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
-
         <ImageView
             android:id="@+id/ivAvatar"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintDimensionRatio="1:1"
             android:src="@drawable/song_cover"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"

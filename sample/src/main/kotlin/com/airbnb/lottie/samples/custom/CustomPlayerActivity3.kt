@@ -8,8 +8,10 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.view.animation.LinearInterpolator
@@ -17,6 +19,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.model.KeyPath
+import com.airbnb.lottie.model.layer.BaseLayer
 import com.airbnb.lottie.samples.R
 import com.airbnb.lottie.samples.databinding.ActivityPlayerTheme3Binding
 import com.airbnb.lottie.samples.utils.viewBinding
@@ -64,6 +67,9 @@ class CustomPlayerActivity3 : AppCompatActivity() {
             ),
         )
 
+        // 图片背景
+        BaseLayer.layerView = binding.lavForeground
+
         binding.playerView.setAnimation(R.raw.player3)
 
         // 音乐指针
@@ -73,14 +79,25 @@ class CustomPlayerActivity3 : AppCompatActivity() {
             object : LottieValueCallback<Float>() {
                 override fun getValue(frameInfo: LottieFrameInfo<Float?>): Float? {
                     if (musicPointerValue == null) {
-                        Log.e("meiqing", "value = " + super.getValue(frameInfo))
                         return super.getValue(frameInfo)
                     }
-                    Log.e("meiqing", "value = " + musicPointerValue)
+//                    Log.e("meiqing" , "value = " + musicPointerValue)
                     return musicPointerValue
                 }
             },
         )
+
+//        val cdBackground1 = KeyPath("胶片_1")
+//        binding.playerView.addValueCallback(
+//            cdBackground1, LottieProperty.TRANSFORM_POSITION,
+//            object : LottieValueCallback<PointF>() {
+//                override fun getValue(frameInfo: LottieFrameInfo<PointF>): PointF? {
+//                    val value = super.getValue(frameInfo)
+//                    Log.e("meiqing" , "value1 = " + value)
+//                    return value
+//                }
+//            },
+//        )
 
         binding.btnPlay.setOnClickListener { _ ->
             binding.playerView.playAnimation()

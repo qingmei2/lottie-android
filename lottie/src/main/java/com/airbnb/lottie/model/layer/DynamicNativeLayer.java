@@ -38,14 +38,14 @@ public class DynamicNativeLayer extends BaseLayer {
   @Override public void drawLayer(@NonNull Canvas canvas, Matrix parentMatrix, int parentAlpha) {
     // Bitmap bitmap = getBitmap();
 
-    int width = 1080;
-    int height = 604;
-    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-
-    if (bitmap == null || bitmap.isRecycled() || lottieImageAsset == null) {
-      return;
-    }
-    float density = Utils.dpScale();
+    // int width = 1080;
+    // int height = 604;
+    // Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    //
+    // if (bitmap == null || bitmap.isRecycled() || lottieImageAsset == null) {
+    //   return;
+    // }
+    // float density = Utils.dpScale();
 
     canvas.save();
     canvas.concat(parentMatrix);
@@ -69,26 +69,6 @@ public class DynamicNativeLayer extends BaseLayer {
     //   outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
     //   boundsMatrix.mapRect(outBounds);
     // }
-  }
-
-  @Nullable
-  private Bitmap getBitmap() {
-    if (imageAnimation != null) {
-      Bitmap callbackBitmap = imageAnimation.getValue();
-      if (callbackBitmap != null) {
-        return callbackBitmap;
-      }
-    }
-    String refId = layerModel.getRefId();
-    Bitmap bitmapFromDrawable = lottieDrawable.getBitmapForId(refId);
-    if (bitmapFromDrawable != null) {
-      return bitmapFromDrawable;
-    }
-    LottieImageAsset asset = this.lottieImageAsset;
-    if (asset != null) {
-      return asset.getBitmap();
-    }
-    return null;
   }
 
   @SuppressWarnings("SingleStatementInBlock")

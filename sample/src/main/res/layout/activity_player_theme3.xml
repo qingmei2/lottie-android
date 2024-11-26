@@ -32,7 +32,7 @@
         android:background="#668A8A25"
         android:gravity="center"
         android:text="原生代理View"
-        app:layout_constraintDimensionRatio="1.78:1"
+        app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintLeft_toLeftOf="@+id/playerView"
         app:layout_constraintRight_toRightOf="@+id/playerView"
         app:layout_constraintTop_toBottomOf="@+id/playerView">
@@ -48,10 +48,9 @@
 
         <ImageView
             android:id="@+id/ivAvatar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:src="@drawable/song_cover"
-            app:layout_constraintHorizontal_bias="0.35"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"

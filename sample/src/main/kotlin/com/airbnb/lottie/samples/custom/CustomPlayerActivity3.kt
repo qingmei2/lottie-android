@@ -87,17 +87,17 @@ class CustomPlayerActivity3 : AppCompatActivity() {
             },
         )
 
-//        val cdBackground1 = KeyPath("胶片_1")
-//        binding.playerView.addValueCallback(
-//            cdBackground1, LottieProperty.TRANSFORM_POSITION,
-//            object : LottieValueCallback<PointF>() {
-//                override fun getValue(frameInfo: LottieFrameInfo<PointF>): PointF? {
-//                    val value = super.getValue(frameInfo)
-//                    Log.e("meiqing" , "value1 = " + value)
-//                    return value
-//                }
-//            },
-//        )
+        val cdBackground1 = KeyPath("胶片_1")
+        binding.playerView.addValueCallback(
+            cdBackground1, LottieProperty.TRANSFORM_POSITION,
+            object : LottieValueCallback<PointF>() {
+                override fun getValue(frameInfo: LottieFrameInfo<PointF>): PointF? {
+                    val value = super.getValue(frameInfo)
+                    Log.e("meiqing" , "value1 = " + value)
+                    return value
+                }
+            },
+        )
 
         binding.btnPlay.setOnClickListener { _ ->
             binding.playerView.playAnimation()

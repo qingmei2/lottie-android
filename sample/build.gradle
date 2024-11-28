@@ -90,6 +90,7 @@ dependencies {
   implementation libs.glide
 
   debugImplementation libs.androidx.fragment.testing
+  implementation "de.hdodenhof:circleimageview:2.1.0"
 
   testImplementation libs.junit4
   androidTestImplementation libs.androidx.test.junit

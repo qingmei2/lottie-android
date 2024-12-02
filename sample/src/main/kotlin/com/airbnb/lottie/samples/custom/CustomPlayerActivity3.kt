@@ -38,6 +38,11 @@ class CustomPlayerActivity3 : AppCompatActivity() {
         arrayOf(0f, -17f),  // 指针结束动画
     )
 
+    /**
+     * 封面动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
+     */
+    private var musicCoverPos: Float = 0f
+
     private var musicPointerValue: Float? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,9 +97,21 @@ class CustomPlayerActivity3 : AppCompatActivity() {
             cdBackground1, LottieProperty.TRANSFORM_POSITION,
             object : LottieValueCallback<PointF>() {
                 override fun getValue(frameInfo: LottieFrameInfo<PointF>): PointF? {
-                    val value = super.getValue(frameInfo)
-                    Log.e("meiqing" , "value1 = " + value)
-                    return value
+                    val startX = frameInfo.startValue?.x ?: 0f
+                    val startY = frameInfo.startValue?.y ?: 0f
+                    val endX = frameInfo.endValue?.x ?: 0f
+                    val endY = frameInfo.endValue?.y ?: 0f
+
+                    return if (musicCoverPos <= 0f) {
+                        PointF(startX, startY)
+                    } else if (musicCoverPos >= 1f) {
+                        PointF(endX, endY)
+                    } else {
+                        PointF(
+                            startX + (endX - startX) * musicCoverPos,
+                            startY + (endY - startY) * musicCoverPos,
+                        )
+                    }
                 }
             },
         )
@@ -121,7 +138,6 @@ class CustomPlayerActivity3 : AppCompatActivity() {
     private fun onPreOrNext() {
         // 切歌：
         // 1.歌曲指针波动一个来回
-        // 2.歌曲封面图动画
         ValueAnimator.ofFloat(musicPointerPos[0][1], musicPointerPos[0][0], musicPointerPos[0][1]).apply {
             duration = 1200 // 动画持续时间，单位为毫秒
             addUpdateListener { animation ->
@@ -132,6 +148,30 @@ class CustomPlayerActivity3 : AppCompatActivity() {
                 }
 
                 override fun onAnimationEnd(p0: Animator) {
+                }
+
+                override fun onAnimationCancel(p0: Animator) {
+                }
+
+                override fun onAnimationRepeat(p0: Animator) {
+                }
+
+            })
+            start() // 开始动画
+        }
+
+        // 2.歌曲封面图动画
+        ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1200 // 动画持续时间，单位为毫秒
+            addUpdateListener { animation ->
+                musicCoverPos = animation.animatedValue as Float
+            }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(p0: Animator) {
+                }
+
+                override fun onAnimationEnd(p0: Animator) {
+                    musicCoverPos = 1f
                 }
 
                 override fun onAnimationCancel(p0: Animator) {

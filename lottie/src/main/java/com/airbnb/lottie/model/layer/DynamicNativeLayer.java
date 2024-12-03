@@ -16,6 +16,7 @@ import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.animation.LPaint;
 import com.airbnb.lottie.animation.keyframe.BaseKeyframeAnimation;
 import com.airbnb.lottie.animation.keyframe.ValueCallbackKeyframeAnimation;
+import com.airbnb.lottie.utils.DropShadow;
 import com.airbnb.lottie.utils.Utils;
 import com.airbnb.lottie.value.LottieValueCallback;
 
@@ -35,8 +36,27 @@ public class DynamicNativeLayer extends BaseLayer {
     this.dynamicView = dynamicView;
   }
 
-  @Override
-  public void drawLayer(@NonNull Canvas canvas, Matrix parentMatrix, int parentAlpha) {
+  /**
+   * 将 View 转换为 Bitmap
+   */
+  private Bitmap captureView(View view) {
+    int width = view.getWidth();
+    int height = view.getHeight();
+    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    Canvas canvas = new Canvas(bitmap);
+    view.draw(canvas);
+
+    // 缩放bitmap为指定宽高，这个宽高需要和 json 中的宽高一致.
+    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 413, 413, true);
+    return scaledBitmap;
+  }
+
+  @Override public void getBounds(RectF outBounds, Matrix parentMatrix, boolean applyParents) {
+    super.getBounds(outBounds, parentMatrix, applyParents);
+
+  }
+
+  @Override void drawLayer(Canvas canvas, Matrix parentMatrix, int parentAlpha, @Nullable DropShadow shadowToApply) {
     final Bitmap bitmap = captureView(dynamicView);
     if (bitmap == null) {
       return;
@@ -59,30 +79,6 @@ public class DynamicNativeLayer extends BaseLayer {
     canvas.drawBitmap(bitmap, src, dst, null);
 
     canvas.restore();
-  }
-
-  /**
-   * 将 View 转换为 Bitmap
-   */
-  private Bitmap captureView(View view) {
-    int width = view.getWidth();
-    int height = view.getHeight();
-    Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-    Canvas canvas = new Canvas(bitmap);
-    view.draw(canvas);
-
-    // 缩放bitmap为指定宽高，这个宽高需要和 json 中的宽高一致.
-    Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, 413, 413, true);
-    return scaledBitmap;
-  }
-
-  @Override public void getBounds(RectF outBounds, Matrix parentMatrix, boolean applyParents) {
-    super.getBounds(outBounds, parentMatrix, applyParents);
-    if (lottieImageAsset != null) {
-      float scale = Utils.dpScale();
-      outBounds.set(0, 0, lottieImageAsset.getWidth() * scale, lottieImageAsset.getHeight() * scale);
-      boundsMatrix.mapRect(outBounds);
-    }
   }
 
   @SuppressWarnings("SingleStatementInBlock")

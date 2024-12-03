@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Toast
 import com.airbnb.epoxy.EpoxyController
+import com.airbnb.lottie.samples.custom.CustomPlayerActivity
 import com.airbnb.lottie.samples.model.CompositionArgs
 import com.airbnb.lottie.samples.utils.BaseEpoxyFragment
 import com.airbnb.lottie.samples.utils.hasPermission
@@ -93,6 +94,15 @@ class PreviewFragment : BaseEpoxyFragment() {
                         startActivity(PlayerActivity.intent(requireContext(), args))
                     }
                     .show()
+            }
+        }
+
+        previewItemView {
+            id("custom")
+            title(R.string.preview_custom)
+            icon(R.drawable.ic_storage)
+            clickListener { _ ->
+                CustomPlayerActivity.launch(requireContext())
             }
         }
     }

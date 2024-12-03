@@ -18,11 +18,13 @@ import com.airbnb.lottie.model.LottieCompositionCache
 import com.airbnb.lottie.snapshots.tests.ApplyOpacityToLayerTestCase
 import com.airbnb.lottie.snapshots.tests.AssetsTestCase
 import com.airbnb.lottie.snapshots.tests.ClipChildrenTestCase
+import com.airbnb.lottie.snapshots.tests.ClipTextToBoundingBoxTestCase
 import com.airbnb.lottie.snapshots.tests.ColorStateListColorFilterTestCase
 import com.airbnb.lottie.snapshots.tests.ComposeDynamicPropertiesTestCase
 import com.airbnb.lottie.snapshots.tests.ComposeScaleTypesTestCase
 import com.airbnb.lottie.snapshots.tests.CompositionFrameRate
 import com.airbnb.lottie.snapshots.tests.CustomBoundsTestCase
+import com.airbnb.lottie.snapshots.tests.DisabledAnimationsTestCase
 import com.airbnb.lottie.snapshots.tests.DynamicPropertiesTestCase
 import com.airbnb.lottie.snapshots.tests.FailureTestCase
 import com.airbnb.lottie.snapshots.tests.FrameBoundariesTestCase
@@ -30,7 +32,9 @@ import com.airbnb.lottie.snapshots.tests.LargeCompositionSoftwareRendering
 import com.airbnb.lottie.snapshots.tests.MarkersTestCase
 import com.airbnb.lottie.snapshots.tests.NightModeTestCase
 import com.airbnb.lottie.snapshots.tests.OutlineMasksAndMattesTestCase
+import com.airbnb.lottie.snapshots.tests.PainterTestCase
 import com.airbnb.lottie.snapshots.tests.PartialFrameProgressTestCase
+import com.airbnb.lottie.snapshots.tests.PolygonStrokeTestCase
 import com.airbnb.lottie.snapshots.tests.ProdAnimationsTestCase
 import com.airbnb.lottie.snapshots.tests.ScaleTypesTestCase
 import com.airbnb.lottie.snapshots.tests.SeekBarTestCase
@@ -145,6 +149,7 @@ class LottieSnapshotTest {
             FrameBoundariesTestCase(),
             ScaleTypesTestCase(),
             ComposeScaleTypesTestCase(),
+            PainterTestCase(),
             DynamicPropertiesTestCase(),
             MarkersTestCase(),
             AssetsTestCase(),
@@ -159,7 +164,10 @@ class LottieSnapshotTest {
             ClipChildrenTestCase(),
             SoftwareRenderingDynamicPropertiesInvalidationTestCase(),
             SeekBarTestCase(),
+            PolygonStrokeTestCase(),
             CompositionFrameRate(),
+            ClipTextToBoundingBoxTestCase(),
+            DisabledAnimationsTestCase(),
         )
 
         withTimeout(TimeUnit.MINUTES.toMillis(45)) {

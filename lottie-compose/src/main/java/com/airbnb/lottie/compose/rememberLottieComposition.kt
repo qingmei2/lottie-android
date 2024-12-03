@@ -22,6 +22,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
 import java.io.IOException
+import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -143,6 +144,7 @@ private fun lottieTask(
                 LottieCompositionFactory.fromRawRes(context, spec.resId, cacheKey)
             }
         }
+
         is LottieCompositionSpec.Url -> {
             if (cacheKey == DefaultCacheKey) {
                 LottieCompositionFactory.fromUrl(context, spec.url)
@@ -150,6 +152,7 @@ private fun lottieTask(
                 LottieCompositionFactory.fromUrl(context, spec.url, cacheKey)
             }
         }
+
         is LottieCompositionSpec.File -> {
             if (isWarmingCache) {
                 // Warming the cache is done from the main thread so we can't
@@ -157,18 +160,26 @@ private fun lottieTask(
                 null
             } else {
                 val fis = FileInputStream(spec.fileName)
+                val actualCacheKey = if (cacheKey == DefaultCacheKey) spec.fileName else cacheKey
                 when {
                     spec.fileName.endsWith("zip") -> LottieCompositionFactory.fromZipStream(
                         ZipInputStream(fis),
-                        if (cacheKey == DefaultCacheKey) spec.fileName else cacheKey,
+                        actualCacheKey,
                     )
+
+                    spec.fileName.endsWith("tgs") -> LottieCompositionFactory.fromJsonInputStream(
+                        GZIPInputStream(fis),
+                        actualCacheKey,
+                    )
+
                     else -> LottieCompositionFactory.fromJsonInputStream(
                         fis,
-                        if (cacheKey == DefaultCacheKey) spec.fileName else cacheKey,
+                        actualCacheKey,
                     )
                 }
             }
         }
+
         is LottieCompositionSpec.Asset -> {
             if (cacheKey == DefaultCacheKey) {
                 LottieCompositionFactory.fromAsset(context, spec.assetName)
@@ -176,13 +187,16 @@ private fun lottieTask(
                 LottieCompositionFactory.fromAsset(context, spec.assetName, cacheKey)
             }
         }
+
         is LottieCompositionSpec.JsonString -> {
             val jsonStringCacheKey = if (cacheKey == DefaultCacheKey) spec.jsonString.hashCode().toString() else cacheKey
             LottieCompositionFactory.fromJsonString(spec.jsonString, jsonStringCacheKey)
         }
+
         is LottieCompositionSpec.ContentProvider -> {
-            val inputStream = context.contentResolver.openInputStream(spec.uri)
-            LottieCompositionFactory.fromJsonInputStream(inputStream, if (cacheKey == DefaultCacheKey) spec.uri.toString() else cacheKey)
+            val fis = context.contentResolver.openInputStream(spec.uri)
+            val actualCacheKey = if (cacheKey == DefaultCacheKey) spec.uri.toString() else cacheKey
+            return LottieCompositionFactory.fromInputStream(context, fis, actualCacheKey)
         }
     }
 }

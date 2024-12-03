@@ -41,12 +41,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import okio.BufferedSource;
 import okio.Okio;
+import okio.Source;
 
 /**
  * Helpers to create or cache a LottieComposition.
@@ -57,6 +58,7 @@ import okio.Okio;
  */
 @SuppressWarnings({"WeakerAccess", "unused", "NullAway"})
 public class LottieCompositionFactory {
+
   /**
    * Keep a map of cache keys to in-progress tasks and return them for new requests.
    * Without this, simultaneous requests to parse a composition will trigger multiple parallel
@@ -69,7 +71,8 @@ public class LottieCompositionFactory {
    * reference magic bytes for zip compressed files.
    * useful to determine if an InputStream is a zip file or not
    */
-  private static final byte[] MAGIC = new byte[]{0x50, 0x4b, 0x03, 0x04};
+  private static final byte[] ZIP_MAGIC = new byte[]{0x50, 0x4b, 0x03, 0x04};
+  private static final byte[] GZIP_MAGIC = new byte[]{0x1f, (byte) 0x8b, 0x08};
 
 
   private LottieCompositionFactory() {
@@ -83,12 +86,27 @@ public class LottieCompositionFactory {
     LottieCompositionCache.getInstance().resize(size);
   }
 
+  /**
+   * Like {@link #clearCache(Context, boolean)} but defaults to clearing the network cache.
+   *
+   * @see #clearCache(Context, boolean)
+   */
   public static void clearCache(Context context) {
+    clearCache(context, true);
+  }
+
+  /**
+   * Clears any pending animations, animations that are parsed and in-memory, and
+   * optionally, any animations loaded from the network that are cached to disk.
+   */
+  public static void clearCache(Context context, boolean includeNetwork) {
     taskCache.clear();
     LottieCompositionCache.getInstance().clear();
-    final NetworkCache networkCache = L.networkCache(context);
-    if (networkCache != null) {
-      networkCache.clear();
+    if (includeNetwork) {
+      final NetworkCache networkCache = L.networkCache(context);
+      if (networkCache != null) {
+        networkCache.clear();
+      }
     }
   }
 
@@ -222,10 +240,46 @@ public class LottieCompositionFactory {
       return new LottieResult<>(cachedComposition);
     }
     try {
-      if (fileName.endsWith(".zip") || fileName.endsWith(".lottie")) {
-        return fromZipStreamSync(context, new ZipInputStream(context.getAssets().open(fileName)), cacheKey);
+      return fromInputStreamSync(context, context.getAssets().open(fileName), cacheKey);
+    } catch (IOException e) {
+      return new LottieResult<>(e);
+    }
+  }
+
+  /**
+   * Use this when you have an input stream but aren't sure if it is a json, zip, or gzip file.
+   * This will read the file headers to see if it starts with the gzip or zip magic bytes.
+   * @param context is optional and only needed if your zip file contains ttf or otf fonts. If yours doesn't, you may pass null.
+   *                Embedded fonts may be .ttf or .otf files, can be in subdirectories, but must have the same name as the
+   *                font family (fFamily) in your animation file.
+   */
+  public static LottieTask<LottieComposition> fromInputStream(@Nullable Context context, InputStream inputStream, @Nullable String cacheKey) {
+    // Prevent accidentally leaking an Activity.
+    final Context appContext = context == null ? null : context.getApplicationContext();
+    return cache(cacheKey, () -> fromInputStreamSync(appContext, inputStream, cacheKey), null);
+  }
+
+  /**
+   * Use this when you have an input stream but aren't sure if it is a json, zip, or gzip file.
+   * This will read the file headers to see if it starts with the gzip or zip magic bytes.
+   * @param context is optional and only needed if your zip file contains ttf or otf fonts. If yours doesn't, you may pass null.
+   *                Embedded fonts may be .ttf or .otf files, can be in subdirectories, but must have the same name as the
+   *                font family (fFamily) in your animation file.
+   */
+  @WorkerThread
+  public static LottieResult<LottieComposition> fromInputStreamSync(@Nullable Context context, InputStream inputStream, @Nullable String cacheKey) {
+    final LottieComposition cachedComposition = cacheKey == null ? null : LottieCompositionCache.getInstance().get(cacheKey);
+    if (cachedComposition != null) {
+      return new LottieResult<>(cachedComposition);
+    }
+    try {
+      BufferedSource source = Okio.buffer(source(inputStream));
+      if (isZipCompressed(source)) {
+        return fromZipStreamSync(context, new ZipInputStream(source.inputStream()), cacheKey);
+      } else if (isGzipCompressed(source)) {
+        return fromJsonInputStreamSync(new GZIPInputStream(source.inputStream()), cacheKey);
       }
-      return fromJsonInputStreamSync(context.getAssets().open(fileName), cacheKey);
+      return fromJsonReaderSync(JsonReader.of(source), cacheKey);
     } catch (IOException e) {
       return new LottieResult<>(e);
     }
@@ -298,8 +352,15 @@ public class LottieCompositionFactory {
       BufferedSource source = Okio.buffer(source(context.getResources().openRawResource(rawRes)));
       if (isZipCompressed(source)) {
         return fromZipStreamSync(context, new ZipInputStream(source.inputStream()), cacheKey);
+      } else if (isGzipCompressed(source)) {
+        try {
+          return fromJsonInputStreamSync(new GZIPInputStream(source.inputStream()), cacheKey);
+        } catch (IOException e) {
+          // This shouldn't happen because we check the header for magic bytes.
+          return new LottieResult<>(e);
+        }
       }
-      return fromJsonInputStreamSync(source.inputStream(), cacheKey);
+      return fromJsonReaderSync(JsonReader.of(source), cacheKey);
     } catch (Resources.NotFoundException e) {
       return new LottieResult<>(e);
     }
@@ -350,7 +411,7 @@ public class LottieCompositionFactory {
    */
   @WorkerThread
   public static LottieResult<LottieComposition> fromJsonInputStreamSync(InputStream stream, @Nullable String cacheKey, boolean close) {
-    return fromJsonReaderSync(JsonReader.of(buffer(source(stream))), cacheKey, close);
+    return fromJsonSourceSync(source(stream), cacheKey, close);
   }
 
   /**
@@ -371,7 +432,7 @@ public class LottieCompositionFactory {
    */
   @Deprecated
   @WorkerThread
-  public static LottieResult<LottieComposition> fromJsonSync(JSONObject json, @Nullable String cacheKey) {
+  public static LottieResult<LottieComposition> fromJsonSync(final JSONObject json, @Nullable String cacheKey) {
     return fromJsonStringSync(json.toString(), cacheKey);
   }
 
@@ -389,7 +450,22 @@ public class LottieCompositionFactory {
   @WorkerThread
   public static LottieResult<LottieComposition> fromJsonStringSync(String json, @Nullable String cacheKey) {
     ByteArrayInputStream stream = new ByteArrayInputStream(json.getBytes());
-    return fromJsonReaderSync(JsonReader.of(buffer(source(stream))), cacheKey);
+    return fromJsonSourceSync(source(stream), cacheKey);
+  }
+
+  public static LottieTask<LottieComposition> fromJsonSource(final Source source, @Nullable final String cacheKey) {
+    return cache(cacheKey, () -> fromJsonSourceSync(source, cacheKey), () -> Utils.closeQuietly(source));
+  }
+
+  @WorkerThread
+  public static LottieResult<LottieComposition> fromJsonSourceSync(final Source source, @Nullable String cacheKey) {
+    return fromJsonSourceSync(source, cacheKey, true);
+  }
+
+  @WorkerThread
+  public static LottieResult<LottieComposition> fromJsonSourceSync(final Source source, @Nullable String cacheKey,
+      boolean close) {
+    return fromJsonReaderSyncInternal(JsonReader.of(buffer(source)), cacheKey, close);
   }
 
   public static LottieTask<LottieComposition> fromJsonReader(final JsonReader reader, @Nullable final String cacheKey) {
@@ -397,17 +473,18 @@ public class LottieCompositionFactory {
   }
 
   @WorkerThread
-  public static LottieResult<LottieComposition> fromJsonReaderSync(com.airbnb.lottie.parser.moshi.JsonReader reader, @Nullable String cacheKey) {
+  public static LottieResult<LottieComposition> fromJsonReaderSync(final JsonReader reader, @Nullable String cacheKey) {
     return fromJsonReaderSync(reader, cacheKey, true);
   }
 
   @WorkerThread
-  public static LottieResult<LottieComposition> fromJsonReaderSync(com.airbnb.lottie.parser.moshi.JsonReader reader, @Nullable String cacheKey, boolean close) {
+  public static LottieResult<LottieComposition> fromJsonReaderSync(final JsonReader reader, @Nullable String cacheKey,
+      boolean close) {
     return fromJsonReaderSyncInternal(reader, cacheKey, close);
   }
 
   private static LottieResult<LottieComposition> fromJsonReaderSyncInternal(
-      com.airbnb.lottie.parser.moshi.JsonReader reader, @Nullable String cacheKey, boolean close) {
+      JsonReader reader, @Nullable String cacheKey, boolean close) {
     try {
       final LottieComposition cachedComposition = cacheKey == null ? null : LottieCompositionCache.getInstance().get(cacheKey);
       if (cachedComposition != null) {
@@ -524,7 +601,8 @@ public class LottieCompositionFactory {
   }
 
   @WorkerThread
-  private static LottieResult<LottieComposition> fromZipStreamSyncInternal(Context context, ZipInputStream inputStream, @Nullable String cacheKey) {
+  private static LottieResult<LottieComposition> fromZipStreamSyncInternal(@Nullable Context context, ZipInputStream inputStream,
+      @Nullable String cacheKey) {
     LottieComposition composition = null;
     Map<String, Bitmap> images = new HashMap<>();
     Map<String, Typeface> fonts = new HashMap<>();
@@ -542,7 +620,7 @@ public class LottieCompositionFactory {
         } else if (entry.getName().equalsIgnoreCase("manifest.json")) { //ignore .lottie manifest
           inputStream.closeEntry();
         } else if (entry.getName().contains(".json")) {
-          com.airbnb.lottie.parser.moshi.JsonReader reader = JsonReader.of(buffer(source(inputStream)));
+          JsonReader reader = JsonReader.of(buffer(source(inputStream)));
           composition = LottieCompositionFactory.fromJsonReaderSyncInternal(reader, null, false).getValue();
         } else if (entryName.contains(".png") || entryName.contains(".webp") || entryName.contains(".jpg") || entryName.contains(".jpeg")) {
           String[] splitName = entryName.split("/");
@@ -552,9 +630,14 @@ public class LottieCompositionFactory {
           String[] splitName = entryName.split("/");
           String fileName = splitName[splitName.length - 1];
           String fontFamily = fileName.split("\\.")[0];
+
+          if (context == null) {
+            return new LottieResult<>(
+                new IllegalStateException("Unable to extract font " + fontFamily + " please pass a non-null Context parameter"));
+          }
+
           File tempFile = new File(context.getCacheDir(), fileName);
-          FileOutputStream fos = new FileOutputStream(tempFile);
-          try {
+          try (FileOutputStream fos = new FileOutputStream(tempFile)) {
             try (OutputStream output = new FileOutputStream(tempFile)) {
               byte[] buffer = new byte[4 * 1024];
               int read;
@@ -626,7 +709,9 @@ public class LottieCompositionFactory {
             Logger.warning("data URL did not have correct base64 format.", e);
             return null;
           }
-          asset.setBitmap(BitmapFactory.decodeByteArray(data, 0, data.length, opts));
+          Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+          bitmap = Utils.resizeBitmapIfNeeded(bitmap, asset.getWidth(), asset.getHeight());
+          asset.setBitmap(bitmap);
         }
       }
     }
@@ -641,9 +726,20 @@ public class LottieCompositionFactory {
    * Check if a given InputStream points to a .zip compressed file
    */
   private static Boolean isZipCompressed(BufferedSource inputSource) {
+    return matchesMagicBytes(inputSource, ZIP_MAGIC);
+  }
+
+  /**
+   * Check if a given InputStream points to a .gzip compressed file
+   */
+  private static Boolean isGzipCompressed(BufferedSource inputSource) {
+    return matchesMagicBytes(inputSource, GZIP_MAGIC);
+  }
+
+  private static Boolean matchesMagicBytes(BufferedSource inputSource, byte[] magic) {
     try {
       BufferedSource peek = inputSource.peek();
-      for (byte b : MAGIC) {
+      for (byte b : magic) {
         if (peek.readByte() != b) {
           return false;
         }
@@ -679,7 +775,7 @@ public class LottieCompositionFactory {
     LottieTask<LottieComposition> task = null;
     final LottieComposition cachedComposition = cacheKey == null ? null : LottieCompositionCache.getInstance().get(cacheKey);
     if (cachedComposition != null) {
-      task = new LottieTask<>(() -> new LottieResult<>(cachedComposition));
+      task = new LottieTask<>(cachedComposition);
     }
     if (cacheKey != null && taskCache.containsKey(cacheKey)) {
       task = taskCache.get(cacheKey);

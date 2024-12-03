@@ -80,4 +80,6 @@
     <string name="showcase_item_player_theme3">播放器方案3</string>
     <string name="showcase_item_recycler_view">RecyclerView</string>
     <string name="bullseye_drag_dot">Drag the blue dot</string>
+
+    <string name="lottiefiles_description">Explore the largest, free-to-use Lottie animation library in the world. Seamlessly test, customize, and get your animation ready for use within minutes.</string>
 </resources>

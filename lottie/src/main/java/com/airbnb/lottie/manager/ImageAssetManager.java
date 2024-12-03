@@ -107,7 +107,8 @@ public class ImageAssetManager {
         return null;
       }
       bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-      return putBitmap(id, bitmap);
+      Bitmap resizedBitmap = Utils.resizeBitmapIfNeeded(bitmap, asset.getWidth(), asset.getHeight());
+      return putBitmap(id, resizedBitmap);
     }
 
     InputStream is;
@@ -137,6 +138,9 @@ public class ImageAssetManager {
   }
 
   public boolean hasSameContext(Context context) {
+    if (context == null) {
+      return this.context == null;
+    }
     Context contextToCompare = this.context instanceof Application ? context.getApplicationContext() : context;
     return contextToCompare == this.context;
   }

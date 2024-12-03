@@ -11,7 +11,6 @@ import android.graphics.Path;
 import android.graphics.RectF;
 
 import androidx.annotation.Nullable;
-import androidx.core.graphics.PaintCompat;
 
 import com.airbnb.lottie.L;
 import com.airbnb.lottie.LottieDrawable;
@@ -19,11 +18,11 @@ import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.animation.LPaint;
 import com.airbnb.lottie.animation.keyframe.BaseKeyframeAnimation;
 import com.airbnb.lottie.animation.keyframe.ColorKeyframeAnimation;
-import com.airbnb.lottie.animation.keyframe.DropShadowKeyframeAnimation;
 import com.airbnb.lottie.animation.keyframe.ValueCallbackKeyframeAnimation;
 import com.airbnb.lottie.model.KeyPath;
 import com.airbnb.lottie.model.content.ShapeFill;
 import com.airbnb.lottie.model.layer.BaseLayer;
+import com.airbnb.lottie.utils.DropShadow;
 import com.airbnb.lottie.utils.MiscUtils;
 import com.airbnb.lottie.value.LottieValueCallback;
 
@@ -46,8 +45,6 @@ public class FillContent
   @Nullable private BaseKeyframeAnimation<Float, Float> blurAnimation;
   float blurMaskFilterRadius;
 
-  @Nullable private DropShadowKeyframeAnimation dropShadowAnimation;
-
   public FillContent(final LottieDrawable lottieDrawable, BaseLayer layer, ShapeFill fill) {
     this.layer = layer;
     name = fill.getName();
@@ -58,17 +55,12 @@ public class FillContent
       blurAnimation.addUpdateListener(this);
       layer.addAnimation(blurAnimation);
     }
-    if (layer.getDropShadowEffect() != null) {
-      dropShadowAnimation = new DropShadowKeyframeAnimation(this, layer, layer.getDropShadowEffect());
-    }
 
     if (fill.getColor() == null || fill.getOpacity() == null) {
       colorAnimation = null;
       opacityAnimation = null;
       return;
     }
-
-    PaintCompat.setBlendMode(paint, layer.getBlendMode().toNativeBlendMode());
 
     path.setFillType(fill.getFillType());
 
@@ -97,14 +89,18 @@ public class FillContent
     return name;
   }
 
-  @Override public void draw(Canvas canvas, Matrix parentMatrix, int parentAlpha) {
+  @Override public void draw(Canvas canvas, Matrix parentMatrix, int parentAlpha, @Nullable DropShadow shadowToApply) {
     if (hidden) {
       return;
     }
-    L.beginSection("FillContent#draw");
+    if (L.isTraceEnabled()) {
+      L.beginSection("FillContent#draw");
+    }
     int color = ((ColorKeyframeAnimation) this.colorAnimation).getIntValue();
-    int alpha = (int) ((parentAlpha / 255f * opacityAnimation.getValue() / 100f) * 255);
-    paint.setColor((clamp(alpha, 0, 255) << 24) | (color & 0xFFFFFF));
+    float fillAlpha = opacityAnimation.getValue() / 100f;
+    int alpha = (int) (parentAlpha * fillAlpha);
+    alpha = clamp(alpha, 0, 255);
+    paint.setColor((alpha << 24) | (color & 0xFFFFFF));
 
     if (colorFilterAnimation != null) {
       paint.setColorFilter(colorFilterAnimation.getValue());
@@ -120,8 +116,10 @@ public class FillContent
       }
       blurMaskFilterRadius = blurRadius;
     }
-    if (dropShadowAnimation != null) {
-      dropShadowAnimation.applyTo(paint);
+    if (shadowToApply != null) {
+      shadowToApply.applyWithAlpha((int)(fillAlpha * 255), paint);
+    } else {
+      paint.clearShadowLayer();
     }
 
     path.reset();
@@ -131,7 +129,9 @@ public class FillContent
 
     canvas.drawPath(path, paint);
 
-    L.endSection("FillContent#draw");
+    if (L.isTraceEnabled()) {
+      L.endSection("FillContent#draw");
+    }
   }
 
   @Override public void getBounds(RectF outBounds, Matrix parentMatrix, boolean applyParents) {
@@ -183,16 +183,6 @@ public class FillContent
         blurAnimation.addUpdateListener(this);
         layer.addAnimation(blurAnimation);
       }
-    } else if (property == LottieProperty.DROP_SHADOW_COLOR && dropShadowAnimation != null) {
-      dropShadowAnimation.setColorCallback((LottieValueCallback<Integer>) callback);
-    } else if (property == LottieProperty.DROP_SHADOW_OPACITY && dropShadowAnimation != null) {
-      dropShadowAnimation.setOpacityCallback((LottieValueCallback<Float>) callback);
-    } else if (property == LottieProperty.DROP_SHADOW_DIRECTION && dropShadowAnimation != null) {
-      dropShadowAnimation.setDirectionCallback((LottieValueCallback<Float>) callback);
-    } else if (property == LottieProperty.DROP_SHADOW_DISTANCE && dropShadowAnimation != null) {
-      dropShadowAnimation.setDistanceCallback((LottieValueCallback<Float>) callback);
-    } else if (property == LottieProperty.DROP_SHADOW_RADIUS && dropShadowAnimation != null) {
-      dropShadowAnimation.setRadiusCallback((LottieValueCallback<Float>) callback);
     }
   }
 }

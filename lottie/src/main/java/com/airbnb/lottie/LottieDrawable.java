@@ -33,6 +33,7 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
 
 import com.airbnb.lottie.animation.LPaint;
+import com.airbnb.lottie.configurations.reducemotion.ReducedMotionMode;
 import com.airbnb.lottie.manager.FontAssetManager;
 import com.airbnb.lottie.manager.ImageAssetManager;
 import com.airbnb.lottie.model.Font;
@@ -44,6 +45,7 @@ import com.airbnb.lottie.utils.Logger;
 import com.airbnb.lottie.utils.LottieThreadFactory;
 import com.airbnb.lottie.utils.LottieValueAnimator;
 import com.airbnb.lottie.utils.MiscUtils;
+import com.airbnb.lottie.utils.Utils;
 import com.airbnb.lottie.value.LottieFrameInfo;
 import com.airbnb.lottie.value.LottieValueCallback;
 import com.airbnb.lottie.value.SimpleLottieValueCallback;
@@ -51,6 +53,7 @@ import com.airbnb.lottie.value.SimpleLottieValueCallback;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -68,7 +71,9 @@ import java.util.concurrent.TimeUnit;
  */
 @SuppressWarnings({"WeakerAccess"})
 public class LottieDrawable extends Drawable implements Drawable.Callback, Animatable {
+
   private interface LazyCompositionTask {
+
     void run(LottieComposition composition);
   }
 
@@ -90,6 +95,21 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * Newer devices can call invalidate directly from whatever thread asyncUpdates runs on.
    */
   private static final boolean invalidateSelfOnMainThread = Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1;
+
+  /**
+   * The marker to use if "reduced motion" is enabled.
+   * Supported marker names are case insensitive, and include:
+   * - reduced motion
+   * - reducedMotion
+   * - reduced_motion
+   * - reduced-motion
+   */
+  private static final List<String> ALLOWED_REDUCED_MOTION_MARKERS = Arrays.asList(
+      "reduced motion",
+      "reduced_motion",
+      "reduced-motion",
+      "reducedmotion"
+  );
 
   private LottieComposition composition;
   private final LottieValueAnimator animator = new LottieValueAnimator();
@@ -126,7 +146,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   FontAssetDelegate fontAssetDelegate;
   @Nullable
   TextDelegate textDelegate;
-  private boolean enableMergePaths;
+  private final LottieFeatureFlags lottieFeatureFlags = new LottieFeatureFlags();
   private boolean maintainOriginalImageBounds = false;
   private boolean clipToCompositionBounds = true;
   @Nullable
@@ -135,6 +155,8 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   private boolean performanceTrackingEnabled;
   private boolean outlineMasksAndMattes;
   private boolean isApplyingOpacityToLayersEnabled;
+  private boolean isApplyingShadowToLayersEnabled;
+  private boolean clipTextToBoundingBox = false;
 
   private RenderMode renderMode = RenderMode.AUTOMATIC;
   /**
@@ -152,6 +174,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   private RectF softwareRenderingDstBoundsRectF;
   private RectF softwareRenderingTransformedBounds;
   private Matrix softwareRenderingOriginalCanvasMatrix;
+  private float[] softwareRenderingOriginalCanvasMatrixElements = new float[9];
   private Matrix softwareRenderingOriginalCanvasMatrixInverse;
 
   /**
@@ -161,7 +184,9 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    */
   private boolean isDirty = false;
 
-  /** Use the getter so that it can fall back to {@link L#getDefaultAsyncUpdates()}. */
+  /**
+   * Use the getter so that it can fall back to {@link L#getDefaultAsyncUpdates()}.
+   */
   @Nullable private AsyncUpdates asyncUpdates;
   private final ValueAnimator.AnimatorUpdateListener progressUpdateListener = animation -> {
     if (getAsyncUpdatesEnabled()) {
@@ -232,6 +257,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   @IntDef({RESTART, REVERSE})
   @Retention(RetentionPolicy.SOURCE)
   public @interface RepeatMode {
+
   }
 
   /**
@@ -268,34 +294,51 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     return compositionLayer != null && compositionLayer.hasMatte();
   }
 
+  @Deprecated
   public boolean enableMergePathsForKitKatAndAbove() {
-    return enableMergePaths;
+    return lottieFeatureFlags.isFlagEnabled(LottieFeatureFlag.MergePathsApi19);
   }
 
   /**
    * Enable this to get merge path support for devices running KitKat (19) and above.
+   * Deprecated: Use enableFeatureFlag(LottieFeatureFlags.FeatureFlag.MergePathsApi19, enable)
    * <p>
    * Merge paths currently don't work if the the operand shape is entirely contained within the
    * first shape. If you need to cut out one shape from another shape, use an even-odd fill type
    * instead of using merge paths.
    */
+  @Deprecated
   public void enableMergePathsForKitKatAndAbove(boolean enable) {
-    if (enableMergePaths == enable) {
-      return;
-    }
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-      Logger.warning("Merge paths are not supported pre-Kit Kat.");
-      return;
-    }
-    enableMergePaths = enable;
-    if (composition != null) {
+    boolean changed = lottieFeatureFlags.enableFlag(LottieFeatureFlag.MergePathsApi19, enable);
+    if (composition != null && changed) {
       buildCompositionLayer();
     }
   }
 
+  /**
+   * @deprecated Replaced by {@link #enableFeatureFlag(LottieFeatureFlag, boolean)}
+   */
+  @Deprecated
   public boolean isMergePathsEnabledForKitKatAndAbove() {
-    return enableMergePaths;
+    return lottieFeatureFlags.isFlagEnabled(LottieFeatureFlag.MergePathsApi19);
+  }
+
+  /**
+   * Enable the specified feature for this drawable.
+   * <p>
+   * Features guarded by LottieFeatureFlags are experimental or only supported by a subset of API levels.
+   * Please ensure that the animation supported by the enabled feature looks acceptable across all
+   * targeted API levels.
+   */
+  public void enableFeatureFlag(LottieFeatureFlag flag, boolean enable) {
+    boolean changed = lottieFeatureFlags.enableFlag(flag, enable);
+    if (composition != null && changed) {
+      buildCompositionLayer();
+    }
+  }
+
+  public boolean isFeatureFlagEnabled(LottieFeatureFlag flag) {
+    return lottieFeatureFlags.isFlagEnabled(flag);
   }
 
   /**
@@ -529,6 +572,24 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   }
 
   /**
+   * Sets whether to apply drop shadows to each layer instead of shape.
+   * <p>
+   * When true, the behavior will be more correct: it will mimic lottie-web and other renderers, in that drop shadows will be applied to a layer
+   * as a whole, no matter its contents.
+   * <p>
+   * When false, the performance will be better at the expense of correctness: for each shape element individually, the first drop shadow upwards
+   * in the hierarchy is applied to it directly. Visually, this may manifest as phantom shadows or artifacts where the artist has intended to treat a
+   * layer as a whole, and this option exposes its internal structure.
+   * <p>
+   * The default value is true.
+   *
+   * @see LottieDrawable::setApplyingOpacityToLayersEnabled
+   */
+  public void setApplyingShadowToLayersEnabled(boolean isApplyingShadowsToLayersEnabled) {
+    this.isApplyingShadowToLayersEnabled = isApplyingShadowsToLayersEnabled;
+  }
+
+  /**
    * This API no longer has any effect.
    */
   @Deprecated
@@ -537,6 +598,26 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   public boolean isApplyingOpacityToLayersEnabled() {
     return isApplyingOpacityToLayersEnabled;
+  }
+
+  public boolean isApplyingShadowToLayersEnabled() { return isApplyingShadowToLayersEnabled; }
+
+  /**
+   * @see #setClipTextToBoundingBox(boolean)
+   */
+  public boolean getClipTextToBoundingBox() {
+    return clipTextToBoundingBox;
+  }
+
+  /**
+   * When true, if there is a bounding box set on a text layer (paragraph text), any text
+   * that overflows past its height will not be drawn.
+   */
+  public void setClipTextToBoundingBox(boolean clipTextToBoundingBox) {
+    if (clipTextToBoundingBox != this.clipTextToBoundingBox) {
+      this.clipTextToBoundingBox = clipTextToBoundingBox;
+      invalidateSelf();
+    }
   }
 
   private void buildCompositionLayer() {
@@ -652,7 +733,9 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       if (asyncUpdatesEnabled) {
         setProgressDrawLock.acquire();
       }
-      L.beginSection("Drawable#draw");
+      if (L.isTraceEnabled()) {
+        L.beginSection("Drawable#draw");
+      }
 
       if (asyncUpdatesEnabled && shouldSetProgressBeforeDrawing()) {
         setProgress(animator.getAnimatedValueAbsolute());
@@ -680,7 +763,9 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     } catch (InterruptedException e) {
       // Do nothing.
     } finally {
-      L.endSection("Drawable#draw");
+      if (L.isTraceEnabled()) {
+        L.endSection("Drawable#draw");
+      }
       if (asyncUpdatesEnabled) {
         setProgressDrawLock.release();
         if (compositionLayer.getProgress() != animator.getAnimatedValueAbsolute()) {
@@ -709,13 +794,14 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
         }
       }
 
-      if (useSoftwareRendering) {
-        canvas.save();
-        canvas.concat(matrix);
-        renderAndDrawAsBitmap(canvas, compositionLayer);
-        canvas.restore();
+      if (safeMode) {
+        try {
+          draw(canvas, matrix, compositionLayer, alpha);
+        } catch (Throwable e) {
+          Logger.error("Lottie crashed in draw!", e);
+        }
       } else {
-        compositionLayer.draw(canvas, matrix, alpha);
+        draw(canvas, matrix, compositionLayer, alpha);
       }
       isDirty = false;
     } catch (InterruptedException e) {
@@ -727,6 +813,17 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
           setProgressExecutor.execute(updateProgressRunnable);
         }
       }
+    }
+  }
+
+  private void draw(Canvas canvas, Matrix matrix, CompositionLayer compositionLayer, int alpha) {
+    if (useSoftwareRendering) {
+      canvas.save();
+      canvas.concat(matrix);
+      renderAndDrawAsBitmap(canvas, compositionLayer);
+      canvas.restore();
+    } else {
+      compositionLayer.draw(canvas, matrix, alpha, null);
     }
   }
 
@@ -766,7 +863,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     }
 
     computeRenderMode();
-    if (animationsEnabled() || getRepeatCount() == 0) {
+    if (animationsEnabled(getContext()) || getRepeatCount() == 0) {
       if (isVisible()) {
         animator.playAnimation();
         onVisibleAction = OnVisibleAction.NONE;
@@ -774,13 +871,38 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
         onVisibleAction = OnVisibleAction.PLAY;
       }
     }
-    if (!animationsEnabled()) {
-      setFrame((int) (getSpeed() < 0 ? getMinFrame() : getMaxFrame()));
+    if (!animationsEnabled(getContext())) {
+      Marker markerForAnimationsDisabled = getMarkerForAnimationsDisabled();
+      if (markerForAnimationsDisabled != null) {
+        setFrame((int) markerForAnimationsDisabled.startFrame);
+      } else {
+        setFrame((int) (getSpeed() < 0 ? getMinFrame() : getMaxFrame()));
+      }
       animator.endAnimation();
       if (!isVisible()) {
         onVisibleAction = OnVisibleAction.NONE;
       }
     }
+  }
+
+
+  /**
+   * This method is used to get the marker for animations when system animations are disabled.
+   * It iterates over the list of allowed reduced motion markers and returns the first non-null marker it finds.
+   * If no non-null marker is found, it returns null.
+   *
+   * @return The first non-null marker from the list of allowed reduced motion markers, or null if no such marker is found.
+   */
+  @RestrictTo(RestrictTo.Scope.LIBRARY)
+  public Marker getMarkerForAnimationsDisabled() {
+    Marker marker = null;
+    for (String markerName : ALLOWED_REDUCED_MOTION_MARKERS) {
+      marker = composition.getMarker(markerName);
+      if (marker != null) {
+        break;
+      }
+    }
+    return marker;
   }
 
   @MainThread
@@ -804,7 +926,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     }
 
     computeRenderMode();
-    if (animationsEnabled() || getRepeatCount() == 0) {
+    if (animationsEnabled(getContext()) || getRepeatCount() == 0) {
       if (isVisible()) {
         animator.resumeAnimation();
         onVisibleAction = OnVisibleAction.NONE;
@@ -812,7 +934,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
         onVisibleAction = OnVisibleAction.RESUME;
       }
     }
-    if (!animationsEnabled()) {
+    if (!animationsEnabled(getContext())) {
       setFrame((int) (getSpeed() < 0 ? getMinFrame() : getMaxFrame()));
       animator.endAnimation();
       if (!isVisible()) {
@@ -1078,9 +1200,13 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       lazyCompositionTasks.add(c -> setProgress(progress));
       return;
     }
-    L.beginSection("Drawable#setProgress");
+    if (L.isTraceEnabled()) {
+      L.beginSection("Drawable#setProgress");
+    }
     animator.setFrame(composition.getFrameForProgress(progress));
-    L.endSection("Drawable#setProgress");
+    if (L.isTraceEnabled()) {
+      L.endSection("Drawable#setProgress");
+    }
   }
 
   /**
@@ -1159,15 +1285,27 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     }
   }
 
-  private boolean animationsEnabled() {
-    return systemAnimationsEnabled || ignoreSystemAnimationsDisabled;
+  public boolean animationsEnabled(@Nullable Context context) {
+    if (ignoreSystemAnimationsDisabled) {
+      return true;
+    }
+    return systemAnimationsEnabled &&
+        L.getReducedMotionOption().getCurrentReducedMotionMode(context) == ReducedMotionMode.STANDARD_MOTION;
   }
 
   /**
    * Tell Lottie that system animations are disabled. When using {@link LottieAnimationView} or Compose {@code LottieAnimation}, this is done
    * automatically. However, if you are using LottieDrawable on its own, you should set this to false when
-   * {@link com.airbnb.lottie.utils.Utils#getAnimationScale(Context)} is 0.
+   * {@link com.airbnb.lottie.utils.Utils#getAnimationScale(Context)} is 0. If the animation is provided a "reduced motion"
+   * marker name, they will be shown instead of the first or last frame. Supported marker names are case insensitive, and include:
+   * - reduced motion
+   * - reducedMotion
+   * - reduced_motion
+   * - reduced-motion
+   *
+   * @deprecated Use {@link com.airbnb.lottie.configurations.reducemotion.ReducedMotionOption} instead and set them on the {@link LottieConfig}
    */
+  @Deprecated
   public void setSystemAnimationsAreEnabled(Boolean areEnabled) {
     systemAnimationsEnabled = areEnabled;
   }
@@ -1180,7 +1318,10 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * Defaults to false.
    *
    * @param ignore if true animations will run even when they are disabled in the system settings.
+   * @deprecated Use {@link com.airbnb.lottie.configurations.reducemotion.IgnoreDisabledSystemAnimationsOption}
+   * instead and set them on the {@link LottieConfig}
    */
+  @Deprecated
   public void setIgnoreDisabledSystemAnimations(boolean ignore) {
     ignoreSystemAnimationsDisabled = ignore;
   }
@@ -1604,10 +1745,10 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
       float scaleX = bounds.width() / (float) composition.getBounds().width();
       float scaleY = bounds.height() / (float) composition.getBounds().height();
 
-      renderingMatrix.preScale(scaleX, scaleY);
       renderingMatrix.preTranslate(bounds.left, bounds.top);
+      renderingMatrix.preScale(scaleX, scaleY);
     }
-    compositionLayer.draw(canvas, renderingMatrix, alpha);
+    compositionLayer.draw(canvas, renderingMatrix, alpha, null);
   }
 
   /**
@@ -1664,14 +1805,21 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     ensureSoftwareRenderingBitmap(renderWidth, renderHeight);
 
     if (isDirty) {
+      softwareRenderingOriginalCanvasMatrix.getValues(softwareRenderingOriginalCanvasMatrixElements);
+      float preExistingScaleX = softwareRenderingOriginalCanvasMatrixElements[Matrix.MSCALE_X];
+      float preExistingScaleY = softwareRenderingOriginalCanvasMatrixElements[Matrix.MSCALE_Y];
+
       renderingMatrix.set(softwareRenderingOriginalCanvasMatrix);
       renderingMatrix.preScale(scaleX, scaleY);
       // We want to render the smallest bitmap possible. If the animation doesn't start at the top left, we translate the canvas and shrink the
       // bitmap to avoid allocating and copying the empty space on the left and top. renderWidth and renderHeight take this into account.
       renderingMatrix.postTranslate(-softwareRenderingTransformedBounds.left, -softwareRenderingTransformedBounds.top);
+      renderingMatrix.postScale(1.0f / preExistingScaleX, 1.0f / preExistingScaleY);
 
       softwareRenderingBitmap.eraseColor(0);
-      compositionLayer.draw(softwareRenderingCanvas, renderingMatrix, alpha);
+      softwareRenderingCanvas.setMatrix(Utils.IDENTITY_MATRIX);
+      softwareRenderingCanvas.scale(preExistingScaleX, preExistingScaleY);
+      compositionLayer.draw(softwareRenderingCanvas, renderingMatrix, alpha, null);
 
       // Calculate the dst bounds.
       // We need to map the rendered coordinates back to the canvas's coordinates. To do so, we need to invert the transform

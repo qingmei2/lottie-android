@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.Toast
 import com.airbnb.epoxy.EpoxyController
 import com.airbnb.lottie.samples.custom.CustomPlayerActivity
+import com.airbnb.lottie.samples.custom.CustomPlayerActivity2
 import com.airbnb.lottie.samples.model.CompositionArgs
 import com.airbnb.lottie.samples.utils.BaseEpoxyFragment
 import com.airbnb.lottie.samples.utils.hasPermission
@@ -103,6 +104,14 @@ class PreviewFragment : BaseEpoxyFragment() {
             icon(R.drawable.ic_storage)
             clickListener { _ ->
                 CustomPlayerActivity.launch(requireContext())
+            }
+        }
+        previewItemView {
+            id("custom2")
+            title(R.string.preview_custom2)
+            icon(R.drawable.ic_storage)
+            clickListener { _ ->
+                CustomPlayerActivity2.launch(requireContext())
             }
         }
     }

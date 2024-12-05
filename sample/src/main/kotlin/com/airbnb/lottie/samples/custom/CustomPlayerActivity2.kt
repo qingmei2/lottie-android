@@ -14,6 +14,7 @@ import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.airbnb.lottie.LottieProperty
@@ -28,11 +29,11 @@ import com.airbnb.lottie.value.LottieValueCallback
 /**
  * 第二种方案: 将占位贴图替换成原生的布局控件.
  */
-class CustomPlayerActivity : AppCompatActivity() {
+class CustomPlayerActivity2 : AppCompatActivity() {
 
     companion object {
         fun launch(context: Context) {
-            val intent = Intent(context, CustomPlayerActivity::class.java)
+            val intent = Intent(context, CustomPlayerActivity2::class.java)
             context.startActivity(intent)
         }
     }
@@ -67,10 +68,10 @@ class CustomPlayerActivity : AppCompatActivity() {
         val circularBitmap2 = getCircleBitmap(bitmap2)
         val circularBitmap3 = getCircleBitmap(bitmap3)
 
-        binding.playerView.imageAssetsFolder = "images/"
+        binding.playerView.imageAssetsFolder = ""
         binding.playerView.setImageAssetDelegate(
             LottieAssetDelegate(
-                this@CustomPlayerActivity,
+                this@CustomPlayerActivity2,
                 "song_cover.webp",
                 "song_cover2.webp",
                 arrayOf(circularBitmap1, circularBitmap2, circularBitmap3)
@@ -80,24 +81,25 @@ class CustomPlayerActivity : AppCompatActivity() {
         // 图片背景
         BaseLayer.layerView = binding.ivAvatar
 
-        binding.playerView.setAnimation(R.raw.player3)
+        binding.playerView.setAnimation(R.raw.player4)
 
-        // 音乐指针
-        val musicPointer = KeyPath("腰杆")
-        binding.playerView.addValueCallback(
-            musicPointer, LottieProperty.TRANSFORM_ROTATION,
-            object : LottieValueCallback<Float>() {
-                override fun getValue(frameInfo: LottieFrameInfo<Float?>): Float? {
-                    if (musicPointerValue == null) {
-                        return super.getValue(frameInfo)
-                    }
-//                    Log.e("meiqing" , "value = " + musicPointerValue)
-                    return musicPointerValue
-                }
-            },
-        )
+        // 唱针-位移动画
+//        val musicPointer = KeyPath("腰杆")
+//        binding.playerView.addValueCallback(
+//            musicPointer, LottieProperty.TRANSFORM_ROTATION,
+//            object : LottieValueCallback<Float>() {
+//                override fun getValue(frameInfo: LottieFrameInfo<Float?>): Float? {
+//                    if (musicPointerValue == null) {
+//                        return super.getValue(frameInfo)
+//                    }
+////                    Log.e("meiqing" , "value = " + musicPointerValue)
+//                    return musicPointerValue
+//                }
+//            },
+//        )
 
-        val cdBackground1 = KeyPath("胶片_1")
+        // 上层封面-出场动画
+        val cdBackground1 = KeyPath("碟01")
         binding.playerView.addValueCallback(
             cdBackground1, LottieProperty.TRANSFORM_POSITION,
             object : LottieValueCallback<PointF>() {
@@ -117,6 +119,18 @@ class CustomPlayerActivity : AppCompatActivity() {
                             startY + (endY - startY) * musicCoverPos,
                         )
                     }
+                }
+            },
+        )
+
+        // 上层封面-旋转动画
+        val cdRotate1 = KeyPath("封面01")
+        binding.playerView.addValueCallback(
+            cdRotate1, LottieProperty.TRANSFORM_ROTATION,
+            object : LottieValueCallback<Float>() {
+                override fun getValue(frameInfo: LottieFrameInfo<Float>): Float? {
+                   Log.e("meiqing", "frameInfo.startValue = ${frameInfo.startValue}")
+                   return null
                 }
             },
         )
@@ -143,27 +157,27 @@ class CustomPlayerActivity : AppCompatActivity() {
     private fun onPreOrNext() {
         // 切歌：
         // 1.歌曲指针波动一个来回
-        ValueAnimator.ofFloat(musicPointerPos[0][1], musicPointerPos[0][0], musicPointerPos[0][1]).apply {
-            duration = 1200 // 动画持续时间，单位为毫秒
-            addUpdateListener { animation ->
-                musicPointerValue = animation.animatedValue as Float
-            }
-            addListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(p0: Animator) {
-                }
-
-                override fun onAnimationEnd(p0: Animator) {
-                }
-
-                override fun onAnimationCancel(p0: Animator) {
-                }
-
-                override fun onAnimationRepeat(p0: Animator) {
-                }
-
-            })
-            start() // 开始动画
-        }
+//        ValueAnimator.ofFloat(musicPointerPos[0][1], musicPointerPos[0][0], musicPointerPos[0][1]).apply {
+//            duration = 1200 // 动画持续时间，单位为毫秒
+//            addUpdateListener { animation ->
+//                musicPointerValue = animation.animatedValue as Float
+//            }
+//            addListener(object : Animator.AnimatorListener {
+//                override fun onAnimationStart(p0: Animator) {
+//                }
+//
+//                override fun onAnimationEnd(p0: Animator) {
+//                }
+//
+//                override fun onAnimationCancel(p0: Animator) {
+//                }
+//
+//                override fun onAnimationRepeat(p0: Animator) {
+//                }
+//
+//            })
+//            start() // 开始动画
+//        }
 
         // 2.歌曲封面图动画
         ValueAnimator.ofFloat(0f, 1f).apply {
@@ -176,7 +190,7 @@ class CustomPlayerActivity : AppCompatActivity() {
                 }
 
                 override fun onAnimationEnd(p0: Animator) {
-                    musicCoverPos = 1f
+                    musicCoverPos = 0f
                 }
 
                 override fun onAnimationCancel(p0: Animator) {
@@ -256,7 +270,7 @@ class CustomPlayerActivity : AppCompatActivity() {
 //    }
 
     private fun getCircleBitmap(bitmap: Bitmap): Bitmap {
-        val scale = 413f / bitmap.width
+        val scale = 480f / bitmap.width
         val matrix = Matrix().apply { postScale(scale, scale) }
         val scaledBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 

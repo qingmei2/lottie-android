@@ -70,9 +70,6 @@
             android:name=".WishListActivity"
             android:exported="false" />
         <activity
-            android:name=".custom.CustomPlayerActivity"
-            android:exported="false" />
-        <activity
             android:name=".custom.CustomPlayerActivity2"
             android:exported="false" />
         <activity

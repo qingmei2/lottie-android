@@ -310,6 +310,14 @@ import java.util.zip.ZipInputStream;
     }
   }
 
+  public void invalidateForce() {
+    super.invalidate();
+    Drawable d = getDrawable();
+    if (d instanceof LottieDrawable) {
+      lottieDrawable.invalidateSelf();
+    }
+  }
+
   @Override public void invalidateDrawable(@NonNull Drawable dr) {
     if (getDrawable() == lottieDrawable) {
       // We always want to invalidate the root drawable so it redraws the whole drawable.

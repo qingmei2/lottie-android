@@ -15,7 +15,9 @@ import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
 import android.os.Bundle
 import android.util.Log
+import android.view.animation.LinearInterpolator
 import android.widget.Toast
+import androidx.annotation.FloatRange
 import androidx.appcompat.app.AppCompatActivity
 import com.airbnb.lottie.LottieProperty
 import com.airbnb.lottie.model.KeyPath
@@ -25,6 +27,7 @@ import com.airbnb.lottie.samples.databinding.ActivityPlayerTheme3Binding
 import com.airbnb.lottie.samples.utils.viewBinding
 import com.airbnb.lottie.value.LottieFrameInfo
 import com.airbnb.lottie.value.LottieValueCallback
+import com.airbnb.lottie.value.ScaleXY
 
 /**
  * 第二种方案: 将占位贴图替换成原生的布局控件.
@@ -40,17 +43,24 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 
     private val binding: ActivityPlayerTheme3Binding by viewBinding()
 
-    private val musicPointerPos = arrayOf(
-        arrayOf(-17f, 0f),  // 指针开始动画
-        arrayOf(0f, -17f),  // 指针结束动画
-    )
+//    private val musicPointerPos = arrayOf(
+//        arrayOf(-17f, 0f),  // 指针开始动画
+//        arrayOf(0f, -17f),  // 指针结束动画
+//    )
 
     /**
-     * 封面动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
+     * 封面位移动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
      */
     private var musicCoverPos: Float = 0f
+    private var musicBottomCoverScale: ScaleXY = ScaleXY(0f, 0f)
+
+    @FloatRange(from = 0.0, to = 360.0)
+    private var rotateAngel: Float = 0f
+    private var rotateAnimator: ValueAnimator? = null
 
     private var musicPointerValue: Float? = null
+
+    private var delegate: LottieAssetDelegate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,15 +78,15 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         val circularBitmap2 = getCircleBitmap(bitmap2)
         val circularBitmap3 = getCircleBitmap(bitmap3)
 
-        binding.playerView.imageAssetsFolder = ""
-        binding.playerView.setImageAssetDelegate(
-            LottieAssetDelegate(
-                this@CustomPlayerActivity2,
-                "song_cover.webp",
-                "song_cover2.webp",
-                arrayOf(circularBitmap1, circularBitmap2, circularBitmap3)
-            ),
+        delegate = LottieAssetDelegate(
+            this@CustomPlayerActivity2,
+            "song_cover.webp",
+            "song_cover2.webp",
+            arrayOf(circularBitmap1, circularBitmap2, circularBitmap3),
         )
+
+        binding.playerView.imageAssetsFolder = "images/"
+        binding.playerView.setImageAssetDelegate(delegate)
 
         // 图片背景
         BaseLayer.layerView = binding.ivAvatar
@@ -123,14 +133,41 @@ class CustomPlayerActivity2 : AppCompatActivity() {
             },
         )
 
+        // 下层封面-出场动画
+        val cdBackground2 = KeyPath("碟02")
+        binding.playerView.addValueCallback(
+            cdBackground2, LottieProperty.TRANSFORM_SCALE,
+            object : LottieValueCallback<ScaleXY>() {
+                override fun getValue(frameInfo: LottieFrameInfo<ScaleXY>): ScaleXY? {
+                    val startX = frameInfo.startValue?.scaleX ?: 0f
+                    val startY = frameInfo.startValue?.scaleY ?: 0f
+                    val endX = frameInfo.endValue?.scaleX ?: 0f
+                    val endY = frameInfo.endValue?.scaleY ?: 0f
+
+                    val result =  if (musicCoverPos <= 0f) {
+                        ScaleXY(0f, 0f)
+                    } else if (musicCoverPos >= 1f) {
+                        ScaleXY(0f, 0f)
+                    } else {
+                        ScaleXY(
+                            startX + (endX - startX) * musicCoverPos,
+                            startY + (endY - startY) * musicCoverPos,
+                        )
+                    }
+                    Log.e("meiqing", "scaleXY = (${result.scaleX},${result.scaleY})" )
+                    return result
+                }
+            },
+        )
+
         // 上层封面-旋转动画
-        val cdRotate1 = KeyPath("封面01")
+        val cdRotate1 = KeyPath("碟01", "封面01")
         binding.playerView.addValueCallback(
             cdRotate1, LottieProperty.TRANSFORM_ROTATION,
             object : LottieValueCallback<Float>() {
-                override fun getValue(frameInfo: LottieFrameInfo<Float>): Float? {
-                   Log.e("meiqing", "frameInfo.startValue = ${frameInfo.startValue}")
-                   return null
+                override fun getValue(frameInfo: LottieFrameInfo<Float>): Float {
+//                    Log.e("meiqing" , "value = " + rotateAngel)
+                    return rotateAngel
                 }
             },
         )
@@ -138,6 +175,8 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         binding.btnPlay.setOnClickListener { _ ->
             binding.playerView.playAnimation()
             onSongPlaying()
+
+            refreshRotateAnim()
         }
         binding.btnPause.setOnClickListener { _ ->
             onSongStop()
@@ -152,6 +191,33 @@ class CustomPlayerActivity2 : AppCompatActivity() {
             Toast.makeText(this, "下一曲", Toast.LENGTH_SHORT).show()
             onPreOrNext()
         }
+    }
+
+    private fun refreshRotateAnim() {
+        if (rotateAnimator != null) {
+            rotateAnimator?.cancel()
+            rotateAnimator = null
+            rotateAngel = 0f
+        }
+
+        // 创建ValueAnimator，设置动画的起始值和结束值为0和360
+        val valueAnimator = ValueAnimator.ofFloat(0f, 360f)
+        // 设置动画的持续时间为5000毫秒（5秒）
+        valueAnimator.duration = 5000L
+        // 设置重复模式为无限重复
+        valueAnimator.repeatCount = ValueAnimator.INFINITE
+        // 设置重复行为为正常（即旋转回来）
+        valueAnimator.repeatMode = ValueAnimator.RESTART
+        // 设置动画的插值器为线性，确保旋转速度均匀
+        valueAnimator.interpolator = LinearInterpolator()
+        // 添加UpdateListener来更新ImageView的旋转角度
+        valueAnimator.addUpdateListener {
+            rotateAngel = it.animatedValue as Float
+        }
+        // 启动动画
+        valueAnimator.start()
+
+        rotateAnimator = valueAnimator
     }
 
     private fun onPreOrNext() {
@@ -185,71 +251,75 @@ class CustomPlayerActivity2 : AppCompatActivity() {
             addUpdateListener { animation ->
                 musicCoverPos = animation.animatedValue as Float
             }
-            addListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(p0: Animator) {
-                }
+            addListener(
+                object : Animator.AnimatorListener {
+                    override fun onAnimationStart(p0: Animator) {
+                    }
 
-                override fun onAnimationEnd(p0: Animator) {
-                    musicCoverPos = 0f
-                }
+                    override fun onAnimationEnd(p0: Animator) {
+                        musicCoverPos = 0f
+                        delegate?.notifySongChanged(binding.ivAvatar, binding.playerView)
+                        refreshRotateAnim()
+                    }
 
-                override fun onAnimationCancel(p0: Animator) {
-                }
+                    override fun onAnimationCancel(p0: Animator) {
+                    }
 
-                override fun onAnimationRepeat(p0: Animator) {
-                }
+                    override fun onAnimationRepeat(p0: Animator) {
+                    }
 
-            })
+                },
+            )
             start() // 开始动画
         }
     }
 
     private fun onSongPlaying() {
-        ValueAnimator.ofFloat(musicPointerPos[0][0], musicPointerPos[0][1]).apply {
-            duration = 600L // 动画持续时间，单位为毫秒
-            addUpdateListener { animation ->
-                musicPointerValue = animation.animatedValue as Float
-            }
-            addListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(p0: Animator) {
-                }
-
-                override fun onAnimationEnd(p0: Animator) {
-                }
-
-                override fun onAnimationCancel(p0: Animator) {
-                }
-
-                override fun onAnimationRepeat(p0: Animator) {
-                }
-
-            })
-            start() // 开始动画
-        }
+//        ValueAnimator.ofFloat(musicPointerPos[0][0], musicPointerPos[0][1]).apply {
+//            duration = 600L // 动画持续时间，单位为毫秒
+//            addUpdateListener { animation ->
+//                musicPointerValue = animation.animatedValue as Float
+//            }
+//            addListener(object : Animator.AnimatorListener {
+//                override fun onAnimationStart(p0: Animator) {
+//                }
+//
+//                override fun onAnimationEnd(p0: Animator) {
+//                }
+//
+//                override fun onAnimationCancel(p0: Animator) {
+//                }
+//
+//                override fun onAnimationRepeat(p0: Animator) {
+//                }
+//
+//            })
+//            start() // 开始动画
+//        }
     }
 
     private fun onSongStop() {
-        ValueAnimator.ofFloat(musicPointerPos[1][0], musicPointerPos[1][1]).apply {
-            duration = 600L // 动画持续时间，单位为毫秒
-            addUpdateListener { animation ->
-                musicPointerValue = animation.animatedValue as Float
-            }
-            addListener(object : Animator.AnimatorListener {
-                override fun onAnimationStart(p0: Animator) {
-                }
-
-                override fun onAnimationEnd(p0: Animator) {
-                }
-
-                override fun onAnimationCancel(p0: Animator) {
-                }
-
-                override fun onAnimationRepeat(p0: Animator) {
-                }
-
-            })
-            start() // 开始动画
-        }
+//        ValueAnimator.ofFloat(musicPointerPos[1][0], musicPointerPos[1][1]).apply {
+//            duration = 600L // 动画持续时间，单位为毫秒
+//            addUpdateListener { animation ->
+//                musicPointerValue = animation.animatedValue as Float
+//            }
+//            addListener(object : Animator.AnimatorListener {
+//                override fun onAnimationStart(p0: Animator) {
+//                }
+//
+//                override fun onAnimationEnd(p0: Animator) {
+//                }
+//
+//                override fun onAnimationCancel(p0: Animator) {
+//                }
+//
+//                override fun onAnimationRepeat(p0: Animator) {
+//                }
+//
+//            })
+//            start() // 开始动画
+//        }
     }
 
 //    fun animateImageView(view: View) {

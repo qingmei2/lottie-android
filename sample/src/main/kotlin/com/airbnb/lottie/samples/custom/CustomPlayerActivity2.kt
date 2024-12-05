@@ -81,7 +81,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         delegate = LottieAssetDelegate(
             this@CustomPlayerActivity2,
             "song_cover.webp",
-            "song_cover2.webp",
+            "song_cover1.webp",
             arrayOf(circularBitmap1, circularBitmap2, circularBitmap3),
         )
 
@@ -119,7 +119,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
                     val endX = frameInfo.endValue?.x ?: 0f
                     val endY = frameInfo.endValue?.y ?: 0f
 
-                    return if (musicCoverPos <= 0f) {
+                    val result = if (musicCoverPos <= 0f) {
                         PointF(startX, startY)
                     } else if (musicCoverPos >= 1f) {
                         PointF(endX, endY)
@@ -129,6 +129,20 @@ class CustomPlayerActivity2 : AppCompatActivity() {
                             startY + (endY - startY) * musicCoverPos,
                         )
                     }
+//                    Log.e("meiqing", "碟01 => (${result.x},${result.y}), musicPos = " + musicCoverPos)
+                    return result
+                }
+            },
+        )
+
+        // 上层封面-旋转动画
+        val cdRotate1 = KeyPath("碟01", "封面01")
+        binding.playerView.addValueCallback(
+            cdRotate1, LottieProperty.TRANSFORM_ROTATION,
+            object : LottieValueCallback<Float>() {
+                override fun getValue(frameInfo: LottieFrameInfo<Float>): Float {
+//                    Log.e("meiqing" , "value = " + rotateAngel)
+                    return rotateAngel
                 }
             },
         )
@@ -154,16 +168,16 @@ class CustomPlayerActivity2 : AppCompatActivity() {
                             startY + (endY - startY) * musicCoverPos,
                         )
                     }
-                    Log.e("meiqing", "scaleXY = (${result.scaleX},${result.scaleY})" )
+                    Log.e("meiqing", "碟02 =>scaleXY = (${result.scaleX},${result.scaleY})，pos = " + musicCoverPos)
                     return result
                 }
             },
         )
 
         // 上层封面-旋转动画
-        val cdRotate1 = KeyPath("碟01", "封面01")
+        val cdRotate2 = KeyPath("碟02", "封面02")
         binding.playerView.addValueCallback(
-            cdRotate1, LottieProperty.TRANSFORM_ROTATION,
+            cdRotate2, LottieProperty.TRANSFORM_ROTATION,
             object : LottieValueCallback<Float>() {
                 override fun getValue(frameInfo: LottieFrameInfo<Float>): Float {
 //                    Log.e("meiqing" , "value = " + rotateAngel)

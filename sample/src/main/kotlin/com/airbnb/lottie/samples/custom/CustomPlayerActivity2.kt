@@ -49,9 +49,15 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 //    )
 
     /**
-     * 封面位移动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
+     * 上层封面位移动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
      */
     private var musicCoverPos: Float = 0f
+
+    /**
+     * 下层封面缩放动画，有两个阶段，取值范围[0f, 1f]，分别对应动画的开始和结束.
+     */
+    private var musicCoverScale: Float = 0f
+
     private var musicBottomCoverScale: ScaleXY = ScaleXY(0f, 0f)
 
     @FloatRange(from = 0.0, to = 360.0)
@@ -153,22 +159,22 @@ class CustomPlayerActivity2 : AppCompatActivity() {
             cdBackground2, LottieProperty.TRANSFORM_SCALE,
             object : LottieValueCallback<ScaleXY>() {
                 override fun getValue(frameInfo: LottieFrameInfo<ScaleXY>): ScaleXY? {
-                    val startX = frameInfo.startValue?.scaleX ?: 0f
+                    val startX = frameInfo.startValue?.scaleX ?: 0f     // 0.85f
                     val startY = frameInfo.startValue?.scaleY ?: 0f
-                    val endX = frameInfo.endValue?.scaleX ?: 0f
+                    val endX = frameInfo.endValue?.scaleX ?: 0f         // 1.0f
                     val endY = frameInfo.endValue?.scaleY ?: 0f
 
-                    val result =  if (musicCoverPos <= 0f) {
-                        ScaleXY(0f, 0f)
-                    } else if (musicCoverPos >= 1f) {
-                        ScaleXY(0f, 0f)
+                    val result = if (musicCoverScale <= 0f) {
+                        ScaleXY(startX, startY)
+                    } else if (musicCoverScale >= 1f) {
+                        ScaleXY(endX, endY)
                     } else {
                         ScaleXY(
-                            startX + (endX - startX) * musicCoverPos,
-                            startY + (endY - startY) * musicCoverPos,
+                            startX + (endX - startX) * musicCoverScale,
+                            startY + (endY - startY) * musicCoverScale,
                         )
                     }
-                    Log.e("meiqing", "碟02 =>scaleXY = (${result.scaleX},${result.scaleY})，pos = " + musicCoverPos)
+                    Log.e("meiqing", "碟02 =>scaleXY = (${result.scaleX},${result.scaleY})，pos = " + musicCoverScale)
                     return result
                 }
             },
@@ -199,11 +205,11 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         binding.btnPre.setOnClickListener { _ ->
             Toast.makeText(this, "上一曲", Toast.LENGTH_SHORT).show()
 //            animateImageView(binding.lavForeground)
-            onPreOrNext()
+            onPreOrNext(false)
         }
         binding.btnNext.setOnClickListener { _ ->
             Toast.makeText(this, "下一曲", Toast.LENGTH_SHORT).show()
-            onPreOrNext()
+            onPreOrNext(true)
         }
     }
 
@@ -234,7 +240,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         rotateAnimator = valueAnimator
     }
 
-    private fun onPreOrNext() {
+    private fun onPreOrNext(next: Boolean) {
         // 切歌：
         // 1.歌曲指针波动一个来回
 //        ValueAnimator.ofFloat(musicPointerPos[0][1], musicPointerPos[0][0], musicPointerPos[0][1]).apply {
@@ -260,10 +266,20 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 //        }
 
         // 2.歌曲封面图动画
-        ValueAnimator.ofFloat(0f, 1f).apply {
+        val valueAnimator = when (next) {
+            true -> ValueAnimator.ofFloat(0f, 1f)
+            false -> ValueAnimator.ofFloat(1f, 0f)
+        }
+
+        valueAnimator.apply {
             duration = 1200 // 动画持续时间，单位为毫秒
             addUpdateListener { animation ->
                 musicCoverPos = animation.animatedValue as Float
+                musicCoverScale = if (next) {
+                    musicCoverPos
+                } else {
+                    1f
+                }
             }
             addListener(
                 object : Animator.AnimatorListener {
@@ -272,7 +288,10 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 
                     override fun onAnimationEnd(p0: Animator) {
                         musicCoverPos = 0f
-                        delegate?.notifySongChanged(binding.ivAvatar, binding.playerView)
+                        musicCoverScale = 1f
+
+                        delegate?.notifySongChanged(next, binding.ivAvatar, binding.playerView)
+
                         refreshRotateAnim()
                     }
 

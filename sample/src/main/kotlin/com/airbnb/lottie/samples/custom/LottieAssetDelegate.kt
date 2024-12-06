@@ -7,6 +7,7 @@ import com.airbnb.lottie.ImageAssetDelegate
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieImageAsset
 import kotlinx.coroutines.Runnable
+import kotlin.math.abs
 
 class LottieAssetDelegate(
     private val context: Context,
@@ -32,18 +33,32 @@ class LottieAssetDelegate(
     /**
      * 切歌后，上层封面回到起始位置，并切换封面到最新歌曲；下层封面更新为下一首歌封面图.
      */
-    fun notifySongChanged(imageView: ImageView, lottieAnimationView: LottieAnimationView) {
-        curSongBitmap = images[(curIndex + 1) % images.size]
-        nextSongBitmap = images[(curIndex + 2) % images.size]
+    fun notifySongChanged(next:Boolean, imageView: ImageView, lottieAnimationView: LottieAnimationView) {
+        if (next) {
+            curSongBitmap = images[(curIndex + 1) % images.size]
+            nextSongBitmap = images[(curIndex + 2) % images.size]
 
-        imageView.setImageBitmap(curSongBitmap)
+            imageView.setImageBitmap(curSongBitmap)
 
-        try {
-            lottieAnimationView.updateBitmap("image_0", curSongBitmap)
-            lottieAnimationView.updateBitmap("image_2", nextSongBitmap)
-        } catch (e: Throwable) {
+            try {
+                lottieAnimationView.updateBitmap("image_0", curSongBitmap)
+                lottieAnimationView.updateBitmap("image_2", nextSongBitmap)
+            } catch (e: Throwable) {
+            }
+            curIndex++
+        } else {
+            curSongBitmap = images[abs(curIndex - 1) % images.size]
+            nextSongBitmap = images[(curIndex) % images.size]
+
+            imageView.setImageBitmap(curSongBitmap)
+
+            try {
+                lottieAnimationView.updateBitmap("image_0", curSongBitmap)
+                lottieAnimationView.updateBitmap("image_2", nextSongBitmap)
+            } catch (e: Throwable) {
+            }
+            curIndex--
         }
-        curIndex++
     }
 }
 

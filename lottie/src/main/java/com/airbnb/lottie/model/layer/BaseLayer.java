@@ -54,6 +54,9 @@ public abstract class BaseLayer
   private static final int MATRIX_SAVE_FLAG = 0x01;
   private static final int SAVE_FLAGS = CLIP_SAVE_FLAG | CLIP_TO_LAYER_SAVE_FLAG | MATRIX_SAVE_FLAG;
 
+  /**
+   * TODO 原生图层交互支持.
+   */
   public static View layerView;
 
   @Nullable

@@ -7,11 +7,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.animation.LinearInterpolator;
 import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RawRes;
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieProperty;
 import com.airbnb.lottie.ext.entity.LottiePlayerExtLayer;
@@ -66,14 +68,32 @@ public final class LottiePlayerExtView extends LottieAnimationView {
 
   public LottiePlayerExtView(Context context) {
     super(context);
+    init();
   }
 
   public LottiePlayerExtView(Context context, AttributeSet attrs) {
     super(context, attrs);
+    init();
   }
 
   public LottiePlayerExtView(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
+    init();
+  }
+
+  public void init() {
+    this.setImageAssetsFolder("images/");
+  }
+
+  public void updateCovers(@Nullable Bitmap curBitmap, @Nullable Bitmap nextBitmap) {
+    if (mAssetDelegate != null) {
+      mAssetDelegate.updateCovers(curBitmap, nextBitmap);
+    }
+  }
+
+  public void setAnimation(@RawRes final int rawRes, @NonNull LottiePlayerExtModel extModel) {
+    setAnimation(rawRes);
+    setExtValueCallbacks(extModel);
   }
 
   public void setAnimation(@NonNull String name, @NonNull LottiePlayerExtModel extModel) {
@@ -115,6 +135,11 @@ public final class LottiePlayerExtView extends LottieAnimationView {
 
     boolean coverRotate = false;
 
+    int imgType = LottiePlayerConstants.ImageAttr.IMG_SHAPE_CIRCLE;
+    int imgRadius = 0;
+    int imgWidth = 0;
+    int imgHeight = 0;
+
     @Nullable LottiePlayerLayerTransform topCoverTransform = null;
     @Nullable LottiePlayerLayerTransform bottomCoverTransform = null;
 
@@ -122,13 +147,17 @@ public final class LottiePlayerExtView extends LottieAnimationView {
       final int layerType = layer.getType();
       @Nullable final List<String> keyPaths = layer.getKeyPath();
       @Nullable final String desc = layer.getDesc();
-
+      @Nullable List<LottiePlayerLayerTransform> transform = layer.getTransform();
       switch (layerType) {
         case LottiePlayerConstants.LayerType.TYPE_IMAGE_RES_TOP:              // 上层图片资源
           topImgId = layer.getImgId();
           if (keyPaths != null && !keyPaths.isEmpty()) {
             topImgName = keyPaths.get(0);
           }
+          imgWidth = layer.getImgW();
+          imgHeight = layer.getImgH();
+          imgType = layer.getImgShape();
+          imgRadius = layer.getImgRadius();
           break;
         case LottiePlayerConstants.LayerType.TYPE_IMAGE_RES_BOTTOM:           // 下层图片资源
           bottomImgId = layer.getImgId();
@@ -141,14 +170,18 @@ public final class LottiePlayerExtView extends LottieAnimationView {
           if (topKeyPath != null) {
             addValueCallback(topKeyPath, LottieProperty.TRANSFORM_POSITION, new TopCoverPositionTransformCallback());
           }
-          topCoverTransform = layer.getTransform();
+          if (transform != null && !transform.isEmpty()) {
+            topCoverTransform = transform.get(0);
+          }
           break;
         case LottiePlayerConstants.LayerType.TYPE_IMAGE_LAYER_CONTAINER_BOTTOM:  // 下层封面
           final KeyPath bottomKeyPath = constructKeyPath(keyPaths);
           if (bottomKeyPath != null) {
             addValueCallback(bottomKeyPath, LottieProperty.TRANSFORM_SCALE, new BottomCoverScaleTransformCallback());
           }
-          bottomCoverTransform = layer.getTransform();
+          if (transform != null && !transform.isEmpty()) {
+            bottomCoverTransform = transform.get(0);
+          }
           break;
         case LottiePlayerConstants.LayerType.TYPE_IMAGE_LAYER_ROTATE_COVER:   // 上/下层封面图
           final KeyPath coverKeyPath = constructKeyPath(keyPaths);
@@ -160,8 +193,8 @@ public final class LottiePlayerExtView extends LottieAnimationView {
       }
 
       if (topImgId != null && topImgName != null) {
-        this.setImageAssetsFolder("images/");
-        this.mAssetDelegate = new LottiePlayerExtAssetDelegate(this, topImgName, topImgId, bottomImgName, bottomImgId, null, null);
+        this.mAssetDelegate = new LottiePlayerExtAssetDelegate(this, topImgName, topImgId, bottomImgName, bottomImgId,
+            null, null, imgWidth, imgHeight, imgType, imgRadius);
         this.setImageAssetDelegate(mAssetDelegate);
       }
 
@@ -223,7 +256,7 @@ public final class LottiePlayerExtView extends LottieAnimationView {
           mTopCoverValue = 0f;
 
           if (mAssetDelegate != null) {
-            mAssetDelegate.updateCovers(playNext, curBitmap, nextBitmap);
+            mAssetDelegate.updateCovers(curBitmap, nextBitmap);
           }
         }
       });
@@ -250,6 +283,8 @@ public final class LottiePlayerExtView extends LottieAnimationView {
       mBottomCoverAnimator = ValueAnimator.ofFloat(0f, 1f);
     } else if (mBottomCoverTransform.isReverse()) {
       mBottomCoverAnimator = ValueAnimator.ofFloat(1f, 0f);
+    } else {
+      mBottomCoverAnimator = ValueAnimator.ofFloat(1f, 1f);
     }
 
     if (mBottomCoverAnimator != null) {
@@ -257,6 +292,7 @@ public final class LottiePlayerExtView extends LottieAnimationView {
       mBottomCoverAnimator.addUpdateListener(valueAnimator -> {
         this.mBottomCoverValue = (float) valueAnimator.getAnimatedValue();
       });
+      mBottomCoverAnimator.start();
     }
   }
 
@@ -345,7 +381,7 @@ public final class LottiePlayerExtView extends LottieAnimationView {
 
     @Nullable @Override public Float getValue(LottieFrameInfo<Float> frameInfo) {
       LottieExtLogger.e("coverRotate", desc + ", angle value = " + mBottomCoverValue);
-      return mBottomCoverValue;
+      return mRotateAngel;
     }
   }
 }

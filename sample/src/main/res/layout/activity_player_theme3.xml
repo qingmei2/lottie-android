@@ -14,7 +14,7 @@
         app:layout_constraintRight_toRightOf="@+id/playerView"
         app:layout_constraintTop_toTopOf="@+id/playerView" />
 
-    <com.airbnb.lottie.LottieAnimationView
+    <com.airbnb.lottie.ext.LottiePlayerExtView
         android:id="@+id/playerView"
         android:layout_width="500px"
         android:layout_height="500px"

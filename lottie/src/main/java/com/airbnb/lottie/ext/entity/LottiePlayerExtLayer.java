@@ -7,10 +7,14 @@ public class LottiePlayerExtLayer {
   private int type;
   private String desc;
   private List<String> keyPath;
+
   private int imgShape;
   private int imgRadius;
   private String imgId;
-  private LottiePlayerLayerTransform transform;
+  private int imgW;
+  private int imgH;
+
+  private List<LottiePlayerLayerTransform> transform;
 
   public void setType(int type) {
     this.type = type;
@@ -65,11 +69,41 @@ public class LottiePlayerExtLayer {
     this.imgRadius = imgRadius;
   }
 
-  public LottiePlayerLayerTransform getTransform() {
+  public List<LottiePlayerLayerTransform> getTransform() {
     return transform;
   }
 
-  public void setTransform(LottiePlayerLayerTransform transform) {
+  public void setTransform(List<LottiePlayerLayerTransform> transform) {
     this.transform = transform;
+  }
+
+  public int getImgW() {
+    return imgW;
+  }
+
+  public void setImgW(int imgW) {
+    this.imgW = imgW;
+  }
+
+  public int getImgH() {
+    return imgH;
+  }
+
+  public void setImgH(int imgH) {
+    this.imgH = imgH;
+  }
+
+  @Override public String toString() {
+    return "LottiePlayerExtLayer{" +
+        "type=" + type +
+        ", desc='" + desc + '\'' +
+        ", keyPath=" + keyPath +
+        ", imgShape=" + imgShape +
+        ", imgRadius=" + imgRadius +
+        ", imgId='" + imgId + '\'' +
+        ", imgW=" + imgW +
+        ", imgH=" + imgH +
+        ", transform=" + transform +
+        '}';
   }
 }

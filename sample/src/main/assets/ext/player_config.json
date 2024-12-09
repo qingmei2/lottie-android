@@ -7,6 +7,8 @@
         "cover.webp"
       ],
       "imgId":"topCover",
+      "imgW" : 480,
+      "imgH" : 480,
       "imgShape": 1
     },
     {
@@ -16,6 +18,8 @@
         "cover1.webp"
       ],
       "imgId":"bottomCover",
+      "imgW" : 480,
+      "imgH" : 480,
       "imgShape": 1
     },
     {

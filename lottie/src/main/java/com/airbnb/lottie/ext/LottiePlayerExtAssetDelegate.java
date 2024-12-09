@@ -1,6 +1,5 @@
 package com.airbnb.lottie.ext;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.text.TextUtils;
 import androidx.annotation.NonNull;
@@ -21,8 +20,14 @@ public final class LottiePlayerExtAssetDelegate implements ImageAssetDelegate {
   @Nullable private Bitmap bottomCover;
   private LottieAnimationView imageView;
 
+  private int imageWidth;
+  private int imageHeight;
+  private int imageRadius;
+  private int imageShape;
+
   public LottiePlayerExtAssetDelegate(@NonNull LottieAnimationView imageView, @NonNull String topCoverName, @NonNull String topCoverId,
-      @Nullable String bottomCoverName, @Nullable String bottomCoverId, @Nullable Bitmap topCover, @Nullable Bitmap bottomCover) {
+      @Nullable String bottomCoverName, @Nullable String bottomCoverId, @Nullable Bitmap topCover, @Nullable Bitmap bottomCover,
+      int imgWidth, int imgHeight, int imageShape, int imgRadius) {
     this.imageView = imageView;
 
     this.topCoverName = topCoverName;
@@ -33,6 +38,11 @@ public final class LottiePlayerExtAssetDelegate implements ImageAssetDelegate {
 
     this.topCover = topCover;
     this.bottomCover = bottomCover;
+
+    this.imageWidth = imgWidth;
+    this.imageHeight = imgHeight;
+    this.imageRadius = imgRadius;
+    this.imageShape = imageShape;
   }
 
   @Override public Bitmap fetchBitmap(LottieImageAsset asset) {
@@ -47,15 +57,15 @@ public final class LottiePlayerExtAssetDelegate implements ImageAssetDelegate {
   /**
    * 切歌后，上层封面回到起始位置，并切换封面到最新歌曲；下层封面更新为下一首歌封面图.
    */
-  public void updateCovers(boolean next, @Nullable Bitmap curBitmap, @Nullable Bitmap nextBitmap) {
-    topCover = curBitmap;
-    bottomCover = nextBitmap;
+  public void updateCovers(@Nullable Bitmap curBitmap, @Nullable Bitmap nextBitmap) {
+    topCover = ExtUtils.getLottieBitmap(curBitmap, imageWidth, imageShape, imageRadius);
+    bottomCover = ExtUtils.getLottieBitmap(nextBitmap, imageWidth, imageShape, imageRadius);;
     try {
       if (curBitmap != null) {
-        imageView.updateBitmap(topCoverId, curBitmap);
+        imageView.updateBitmap(topCoverId, topCover);
       }
-      if (!TextUtils.isEmpty(bottomCoverId) && nextBitmap != null) {
-        imageView.updateBitmap(bottomCoverId, nextBitmap);
+      if (!TextUtils.isEmpty(bottomCoverId) && bottomCover != null) {
+        imageView.updateBitmap(bottomCoverId, bottomCover);
       }
     } catch (Throwable e) {
     }

@@ -292,6 +292,11 @@ public final class LottiePlayerExtView extends LottieAnimationView {
       mBottomCoverAnimator.addUpdateListener(valueAnimator -> {
         this.mBottomCoverValue = (float) valueAnimator.getAnimatedValue();
       });
+      mBottomCoverAnimator.addListener(new AnimatorListenerAdapter() {
+        @Override public void onAnimationEnd(Animator animation) {
+          mBottomCoverValue = 0f;
+        }
+      });
       mBottomCoverAnimator.start();
     }
   }

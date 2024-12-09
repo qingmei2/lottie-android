@@ -55,7 +55,7 @@ class CustomPlayerActivity : AppCompatActivity() {
         val bitmap3 = BitmapFactory.decodeResource(resources, R.drawable.song_cover3)
 
         // 图片背景
-        BaseLayer.layerView = binding.ivAvatar
+//        BaseLayer.layerView = binding.ivAvatar
         images = arrayOf(bitmap, bitmap2, bitmap3)
 
         val json = readFromAssets(this, "ext/player_config.json")

@@ -43,11 +43,6 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 
     private val binding: ActivityPlayerTheme3Binding by viewBinding()
 
-//    private val musicPointerPos = arrayOf(
-//        arrayOf(-17f, 0f),  // 指针开始动画
-//        arrayOf(0f, -17f),  // 指针结束动画
-//    )
-
     /**
      * 上层封面位移动画，有两个阶段，取值范围 [0f, 1f]，分别对应动画的开始和结束.
      */
@@ -86,8 +81,8 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 
         delegate = LottieAssetDelegate(
             this@CustomPlayerActivity2,
-            "song_cover.webp",
-            "song_cover1.webp",
+            "topCover",
+            "bottomCover",
             arrayOf(circularBitmap1, circularBitmap2, circularBitmap3),
         )
 
@@ -95,7 +90,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         binding.playerView.setImageAssetDelegate(delegate)
 
         // 图片背景
-        BaseLayer.layerView = binding.ivAvatar
+//        BaseLayer.layerView = binding.ivAvatar
 
         binding.playerView.setAnimation(R.raw.player4)
 
@@ -115,7 +110,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
 //        )
 
         // 上层封面-出场动画
-        val cdBackground1 = KeyPath("碟01")
+        val cdBackground1 = KeyPath("上层")
         binding.playerView.addValueCallback(
             cdBackground1, LottieProperty.TRANSFORM_POSITION,
             object : LottieValueCallback<PointF>() {
@@ -142,7 +137,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         )
 
         // 上层封面-旋转动画
-        val cdRotate1 = KeyPath("碟01", "封面01")
+        val cdRotate1 = KeyPath("上层", "上层封面图")
         binding.playerView.addValueCallback(
             cdRotate1, LottieProperty.TRANSFORM_ROTATION,
             object : LottieValueCallback<Float>() {
@@ -154,7 +149,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         )
 
         // 下层封面-出场动画
-        val cdBackground2 = KeyPath("碟02")
+        val cdBackground2 = KeyPath("下层")
         binding.playerView.addValueCallback(
             cdBackground2, LottieProperty.TRANSFORM_SCALE,
             object : LottieValueCallback<ScaleXY>() {
@@ -165,9 +160,9 @@ class CustomPlayerActivity2 : AppCompatActivity() {
                     val endY = frameInfo.endValue?.scaleY ?: 0f
 
                     val result = if (musicCoverScale <= 0f) {
-                        ScaleXY(startX, startY)
-                    } else if (musicCoverScale >= 1f) {
-                        ScaleXY(endX, endY)
+                        ScaleXY(0f, 0f)
+                    } else if (musicCoverScale > 1f) {
+                        ScaleXY(0f, 0f)
                     } else {
                         ScaleXY(
                             startX + (endX - startX) * musicCoverScale,
@@ -181,7 +176,7 @@ class CustomPlayerActivity2 : AppCompatActivity() {
         )
 
         // 上层封面-旋转动画
-        val cdRotate2 = KeyPath("碟02", "封面02")
+        val cdRotate2 = KeyPath("下层", "下层封面图")
         binding.playerView.addValueCallback(
             cdRotate2, LottieProperty.TRANSFORM_ROTATION,
             object : LottieValueCallback<Float>() {
@@ -308,6 +303,10 @@ class CustomPlayerActivity2 : AppCompatActivity() {
     }
 
     private fun onSongPlaying() {
+        if (rotateAnimator != null) {
+            rotateAnimator!!.resume()
+        }
+
 //        ValueAnimator.ofFloat(musicPointerPos[0][0], musicPointerPos[0][1]).apply {
 //            duration = 600L // 动画持续时间，单位为毫秒
 //            addUpdateListener { animation ->
@@ -332,6 +331,9 @@ class CustomPlayerActivity2 : AppCompatActivity() {
     }
 
     private fun onSongStop() {
+        if (rotateAnimator != null) {
+            rotateAnimator!!.pause()
+        }
 //        ValueAnimator.ofFloat(musicPointerPos[1][0], musicPointerPos[1][1]).apply {
 //            duration = 600L // 动画持续时间，单位为毫秒
 //            addUpdateListener { animation ->

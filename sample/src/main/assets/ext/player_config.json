@@ -1,0 +1,97 @@
+{
+  "layers": [
+    {
+      "type": 1,
+      "desc": "上层图片",
+      "keyPath": [
+        "cover.webp"
+      ],
+      "imgId":"topCover",
+      "imgShape": 1
+    },
+    {
+      "type": 2,
+      "desc": "下层图片",
+      "keyPath": [
+        "cover1.webp"
+      ],
+      "imgId":"bottomCover",
+      "imgShape": 1
+    },
+    {
+      "type": 3,
+      "desc": "上层",
+      "keyPath": [
+        "上层"
+      ],
+      "transform": [
+        {
+          "type": 1,
+          "desc": "出场位移",
+          "dur": 1200,
+          "reverse": 1
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "desc": "上层封面图",
+      "keyPath": [
+        "上层",
+        "上层封面图"
+      ],
+      "transform": [
+        {
+          "type": 3,
+          "desc": "封面旋转",
+          "dur": 5000
+        }
+      ]
+    },
+    {
+      "type": 4,
+      "desc": "下层",
+      "keyPath": [
+        "下层"
+      ],
+      "transform": [
+        {
+          "type": 2,
+          "desc": "入场缩放",
+          "dur": 1200,
+          "reverse": 0
+        }
+      ]
+    },
+    {
+      "type": 5,
+      "desc": "下层封面图",
+      "keyPath": [
+        "下层",
+        "下层封面图"
+      ],
+      "transform": [
+        {
+          "type": 3,
+          "desc": "封面旋转",
+          "dur": 5000
+        }
+      ]
+    },
+    {
+      "type": 6,
+      "desc": "唱针",
+      "keyPath": [
+        "唱针"
+      ],
+      "transform": [
+        {
+          "type": 1,
+          "desc": "出场位移",
+          "dur": 1200,
+          "reverse": 1
+        }
+      ]
+    }
+  ]
+}

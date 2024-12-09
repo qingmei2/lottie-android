@@ -9,11 +9,11 @@
   "ddd": 0,
   "assets": [
     {
-      "id": "image_0",
+      "id": "topCover",
       "w": 480,
       "h": 480,
       "u": "images/",
-      "p": "song_cover.webp",
+      "p": "topCover",
       "e": 1
     },
     {
@@ -25,11 +25,11 @@
       "e": 1
     },
     {
-      "id": "image_2",
+      "id": "bottomCover",
       "w": 480,
       "h": 480,
       "u": "images/",
-      "p": "song_cover1.webp",
+      "p": "bottomCover",
       "e": 1
     },
     {
@@ -39,9 +39,9 @@
           "ddd": 0,
           "ind": 1,
           "ty": 2,
-          "nm": "封面01",
+          "nm": "上层封面图",
           "cl": "png",
-          "refId": "image_0",
+          "refId": "topCover",
           "sr": 1,
           "ks": {
             "o": {
@@ -208,9 +208,9 @@
           "ddd": 0,
           "ind": 1,
           "ty": 2,
-          "nm": "封面02",
+          "nm": "下层封面图",
           "cl": "png",
-          "refId": "image_2",
+          "refId": "bottomCover",
           "sr": 1,
           "ks": {
             "o": {
@@ -376,7 +376,7 @@
       "ddd": 0,
       "ind": 1,
       "ty": 0,
-      "nm": "碟01",
+      "nm": "上层",
       "refId": "comp_0",
       "sr": 1,
       "ks": {
@@ -461,7 +461,7 @@
       "ddd": 0,
       "ind": 2,
       "ty": 0,
-      "nm": "碟02",
+      "nm": "下层",
       "refId": "comp_1",
       "sr": 1,
       "ks": {

@@ -41,8 +41,8 @@ class LottieAssetDelegate(
             imageView.setImageBitmap(curSongBitmap)
 
             try {
-                lottieAnimationView.updateBitmap("image_0", curSongBitmap)
-                lottieAnimationView.updateBitmap("image_2", nextSongBitmap)
+                lottieAnimationView.updateBitmap("topCover", curSongBitmap)
+                lottieAnimationView.updateBitmap("bottomCover", nextSongBitmap)
             } catch (e: Throwable) {
             }
             curIndex++
@@ -53,8 +53,8 @@ class LottieAssetDelegate(
             imageView.setImageBitmap(curSongBitmap)
 
             try {
-                lottieAnimationView.updateBitmap("image_0", curSongBitmap)
-                lottieAnimationView.updateBitmap("image_2", nextSongBitmap)
+                lottieAnimationView.updateBitmap("topCover", curSongBitmap)
+                lottieAnimationView.updateBitmap("bottomCover", nextSongBitmap)
             } catch (e: Throwable) {
             }
             curIndex--
